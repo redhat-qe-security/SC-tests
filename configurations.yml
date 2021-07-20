@@ -1,0 +1,17 @@
+---
+root_passwd: "redhat"
+ca_dir: "/root/ca_dir"
+local_user:
+    name: "local-user"
+    passwd: "654321"
+    pin: "123456"
+    card_dir: "/root/test_dir/local-user"
+krb:
+    name: new-user
+    passwd: "KrbUser"
+    pin: "SECret.123"
+    ip: "10.37.180.210"
+    root_passwd: "50$ForPassword"
+    realm_name: "EXAMPLE.COM"
+    server_name: "krb-server.sctesting.redhat.com"
+    card_dir: "/root/test_dir/krb_user"
