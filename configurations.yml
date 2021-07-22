@@ -1,17 +1,21 @@
 ---
 root_passwd: "redhat"
 ca_dir: "/root/ca_dir"
-local_user:
-    name: "local-user"
-    passwd: "654321"
-    pin: "123456"
-    card_dir: "/root/test_dir/local-user"
-krb:
-    name: new-user
-    passwd: "KrbUser"
-    pin: "SECret.123"
-    ip: "10.37.180.210"
-    root_passwd: "50$ForPassword"
-    realm_name: "EXAMPLE.COM"
-    server_name: "krb-server.sctesting.redhat.com"
-    card_dir: "/root/test_dir/krb_user"
+
+ipa_server_ip: 
+ipa_server_hostname: "ipa-server.sc.test.com"
+ipa_client_hostname: "ipa-client.sc.test.com"
+ipa_server_admin_passwd: "SECret.123"
+
+users:
+    - name: "local-user"
+      passwd: "654321"
+      pin: "123456"
+      card_dir: "/root/local-user"
+      local: true
+
+    - name: "ipa-user"
+      passwd: "ipa-user-passwd"
+      pin: "SECret.123"
+      card_dir: "/root/krb_user"
+      local: false
