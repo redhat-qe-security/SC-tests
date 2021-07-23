@@ -12,9 +12,10 @@ local_user:
     passwd: "654321"
     pin: "123456"
     card_dir: "/root/local-user"
-
+    local: true
 ipa_user:
   name: "ipa-user"
   passwd: "ipa-user-passwd"
   pin: "SECret.123"
   card_dir: "/root/krb_user"
+  local: false
