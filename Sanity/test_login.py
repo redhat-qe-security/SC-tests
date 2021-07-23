@@ -9,12 +9,15 @@ class TestLogin(TestBase):
 
     def test_su_login_with_sc(self):
         """Basic su login to the user with a smart card."""
-        utils.check_su_login_with_sc(passwd=self.PIN, username=self.USERNAME)
+        with authselect.Authselect(required=False):
+            with virt_sc.VirtCard(self.USERNAME) as sc:
+                sc.run_cmd(f'su - {self.USERNAME} -c "su - {self.USERNAME} -c whoami"',
+                           expect=self.USERNAME, passwd="123456", pin=True)
 
     def test_gdm_login_sc_required(self):
         """GDM login to the user when smart card is enforcing."""
         with authselect.Authselect(required=True):
-            with virt_sc.VirtCard() as sc:
+            with virt_sc.VirtCard(self.USERNAME) as sc:
                 inner = f'sssctl user-checks -s gdm-smartcard {self.USERNAME} -a auth'
                 cmd = f'bash -c "{inner}"'
                 shell = sc.run_cmd(cmd, expect="")
