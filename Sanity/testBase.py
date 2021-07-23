@@ -9,6 +9,8 @@ class TestBase(Test):
         log.debug("Preparing varialbes")
         self.ROOT_PASSWD = self.params.get("root_passwd", path="/run/")
         self.users = self.params.get("users", path="/run/")
+        log.debug(self.users)
         self.PIN = "123456"
         self.PASSWD = "654321"
         self.USERNAME = "local-user"
+        self.WRONG_PASSWD = "q5435"

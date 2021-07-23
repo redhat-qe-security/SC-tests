@@ -14,6 +14,13 @@ class TestLogin(TestBase):
                 sc.run_cmd(f'su - {self.USERNAME} -c "su - {self.USERNAME} -c whoami"',
                            expect=self.USERNAME, passwd="123456", pin=True)
 
+    def test_su_login_with_sc_wrong(self):
+        """Basic su login to the user with a smart card."""
+        with authselect.Authselect(required=False):
+            with virt_sc.VirtCard(self.USERNAME) as sc:
+                sc.run_cmd(f'su - {self.USERNAME} -c "su - {self.USERNAME} -c whoami"',
+                           expect="su: Authentication failer", passwd="9876543", pin=True)
+
     def test_gdm_login_sc_required(self):
         """GDM login to the user when smart card is enforcing."""
         with authselect.Authselect(required=True):
@@ -26,13 +33,11 @@ class TestLogin(TestBase):
                 shell.expect(f"PIN for {self.USERNAME}")
                 shell.sendline(self.PIN)
                 shell.expect("pam_authenticate.*Success")
-                # sc.run_cmd(expect="pam_authenticate.*Success",
-                #            passwd=self.PIN, shell=shell)
 
     def test_su_login_without_sc(self):
         """SU login without smart card."""
         with authselect.Authselect():
-            with virt_sc.VirtCard() as sc:
+            with virt_sc.VirtCard(self.USERNAME) as sc:
                 cmd = f'su - {self.USERNAME} -c "su - {self.USERNAME} -c whoami"'
                 sc.run_cmd(cmd, self.USERNAME, pin=False, passwd=self.PASSWD)
 
@@ -41,7 +46,7 @@ class TestLogin(TestBase):
         Test is executed under root, this why there is need to do twice login
         into the localuser"""
         with authselect.Authselect(lock_on_removal=True, mk_homedir=True):
-            with virt_sc.VirtCard(insert=True) as sc:
+            with virt_sc.VirtCard(self.USERNAME, insert=True) as sc:
                 shell = sc.run_cmd(f'bash -c "su - {self.USERNAME}"', expect="")
                 shell.sendline(f"su - {self.USERNAME}")
                 shell.sendline(self.PIN)
