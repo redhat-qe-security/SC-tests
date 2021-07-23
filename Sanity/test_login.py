@@ -1,7 +1,7 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
-import SCAutolib.src.virt_card as virt_sc
 import SCAutolib.src.authselect as authselect
-import SCAutolib.src.utils as utils
+import SCAutolib.src.virt_card as virt_sc
+
 from testBase import TestBase
 
 
@@ -10,16 +10,16 @@ class TestLogin(TestBase):
     def test_su_login_with_sc(self):
         """Basic su login to the user with a smart card."""
         with authselect.Authselect(required=False):
-            with virt_sc.VirtCard(self.USERNAME) as sc:
+            with virt_sc.VirtCard(self.USERNAME, insert=True) as sc:
                 sc.run_cmd(f'su - {self.USERNAME} -c "su - {self.USERNAME} -c whoami"',
                            expect=self.USERNAME, passwd="123456", pin=True)
 
     def test_su_login_with_sc_wrong(self):
         """Basic su login to the user with a smart card."""
         with authselect.Authselect(required=False):
-            with virt_sc.VirtCard(self.USERNAME) as sc:
-                sc.run_cmd(f'su - {self.USERNAME} -c "su - {self.USERNAME} -c whoami"',
-                           expect="su: Authentication failer", passwd="9876543", pin=True)
+            with virt_sc.VirtCard(self.USERNAME, insert=True) as sc:
+                sc.run_cmd(f'su - {self.USERNAME} -c "su - {self.USERNAME}"',
+                           expect="su: Authentication failure", passwd="9876543", pin=True)
 
     def test_gdm_login_sc_required(self):
         """GDM login to the user when smart card is enforcing."""
