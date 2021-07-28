@@ -16,8 +16,10 @@ local_user:
     card_dir: "/root/local-user"
     local: true
 ipa_user:
-  name: "ipa-user"
-  passwd: "ipa-user-passwd"
-  pin: "SECret.123"
-  card_dir: "/root/krb_user"
-  local: false
+    name: "ipa-user"
+    passwd: "ipa-user-passwd"
+    pin: "123456"
+    card_dir: "/root/ipa-user"
+    cert: "/root/ipa-user/cert.pem"
+    key: "/root/ipa-user/private.key"
+    local: false
