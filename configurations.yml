@@ -2,6 +2,7 @@
 root_passwd: "redhat"
 ca_dir: "/root/ca_dir"
 
+ipa_server_root: "redhat"
 ipa_server_ip: ""
 ipa_server_hostname: "ipa-server.sc.test.com"
 ipa_client_hostname: "ipa-client.sc.test.com"
