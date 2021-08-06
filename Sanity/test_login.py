@@ -13,21 +13,24 @@ class TestLogin(TestBase):
         with authselect.Authselect(required=False):
             with virt_sc.VirtCard(self.USERNAME_LOCAL, insert=True) as sc:
                 sc.run_cmd(f'su - {self.USERNAME_LOCAL} -c "su - {self.USERNAME_LOCAL} -c whoami"',
-                           expect=self.USERNAME_LOCAL, passwd=self.PIN_LOCAL, pin=True)
+                           expect=self.USERNAME_LOCAL, passwd=self.PIN_LOCAL, pin=True,
+                           check_rc=True)
 
     def test_su_login_with_sc_wrong(self):
         """Basic su login to the user with a smart card."""
         with authselect.Authselect(required=False):
             with virt_sc.VirtCard(self.USERNAME_LOCAL, insert=True) as sc:
                 sc.run_cmd(f'su - {self.USERNAME_LOCAL} -c "su - {self.USERNAME_LOCAL}"',
-                           expect="su: Authentication failure", passwd="1264325", pin=True)
+                           expect="su: Authentication failure", passwd="1264325", pin=True,
+                           zero_rc=False, check_rc=True)
 
     def test_gdm_login_sc_required(self):
-        """GDM login to the user when smart card is enforcing."""
+        """GDM login to the user when smart card is enforcing. Point is check
+        that GDM prompts to insert the smart card if it is not inserted
+        """
         with authselect.Authselect(required=True):
             with virt_sc.VirtCard(self.USERNAME_LOCAL) as sc:
-                inner = f'sssctl user-checks -s gdm-smartcard {self.USERNAME_LOCAL} -a auth'
-                cmd = f'bash -c "{inner}"'
+                cmd = f'sssctl user-checks -s gdm-smartcard {self.USERNAME_LOCAL} -a auth'
                 shell = sc.run_cmd(cmd, expect="")
                 shell.expect("Please insert smart card")
                 sc.insert()
