@@ -1,5 +1,5 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
-from SCAutolib import log
+from SCAutolib import base_logger
 from SCAutolib.src.env import read_config
 from avocado import Test
 from SCAutolib.src.authselect import Authselect
@@ -10,7 +10,7 @@ from SCAutolib.src.utils import run_cmd, check_output
 class TestBase(Test):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        log.debug("Preparing test variables")
+        base_logger.debug("Preparing test variables")
         self.ROOT_PASSWD = read_config("root_passwd")
         self.USERNAME_LOCAL = read_config("local_user.name")
         self.PASSWD_LOCAL = read_config("local_user.passwd")
