@@ -6,7 +6,7 @@ from fixtures import *
 import pytest
 
 
-@pytest.skip()
+@pytest.mark.skip
 def test_wrong_issuer_cert(user):
     """Test failed smart card login when root certificate has different
     issuer then certificate on the smart card."""

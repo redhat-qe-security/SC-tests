@@ -2,8 +2,7 @@ import pytest
 from SCAutolib.src import read_config
 from SCAutolib.src.authselect import Authselect
 from SCAutolib.src.virt_card import VirtCard
-from SCAutolib.src.utils import run_cmd, check_output
-
+from SCAutolib.src.utils import run_cmd, check_output, edit_config_, restart_service, backup_, restore_file_
 
 class User:
     def __init__(self):
@@ -30,5 +29,31 @@ class User:
 
 
 @pytest.fixture()
+def edit_config(file_path, section, key, value, restore, restart):
+    """Used for editing given configuration file. Arguments are based through
+    the pytest.mark.parametrize decorator"""
+    destination_path = ""
+
+    if restore:
+        destination_path = backup_(file_path)
+
+    edit_config_(file_path, section, key, value)
+    for service in restart:
+        restart_service(service)
+
+    yield
+
+    if restore:
+        restore_file_(destination_path, file_path)
+        for service in restart:
+            restart_service(service)
+
+
 def user():
     return User()
+
+
+@pytest.fixture(name="user")
+def user_indirect():
+    """Returns an object of local user"""
+    return user()
