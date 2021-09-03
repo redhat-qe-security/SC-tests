@@ -61,8 +61,14 @@ def user_indirect():
 
 
 @pytest.fixture()
-def backup(file_path: str, restore: bool, restart: list):
+def backup(file_path, restore, restart):
+    assert type(file_path) == str
+    assert type(restore) == bool
+    assert (type(restart) == list) or (type(restart) == str)
     target = backup_(file_path)
+    if type(restart) == str:
+        restart = [restart]
+
     for service in restart:
         restart_service(service)
 
