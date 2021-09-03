@@ -1,5 +1,4 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
-import SCAutolib.src.utils as utils
 from fixtures import *
 import pytest
 
@@ -25,8 +24,10 @@ def test_su_login_p11_uri_wrong_slot_description(user, edit_config):
 
 
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
-                         [("/etc/sssd/sssd.conf", f"certmap/shadowutils/{user().USERNAME_LOCAL}",
-                          "matchrule", "<SUBJECT>.*CN=testuser.*", True, ["sssd"])])
+                         [("/etc/sssd/sssd.conf",
+                           f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
+                           "matchrule", "<SUBJECT>.*CN=testuser.*",
+                           True, ["sssd"])])
 def test_user_mismatch(user, edit_config):
     """Test smart card login fail when sssd.conf do not contain user from
     the smart card (wrong user in matchrule)"""
@@ -34,8 +35,10 @@ def test_user_mismatch(user, edit_config):
 
 
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
-                         [("/etc/sssd/sssd.conf", f"certmap/shadowutils/{user().USERNAME_LOCAL}",
-                          "matchrule", f"UID={user().USERNAME_LOCAL}", True, ["sssd"])])
+                         [("/etc/sssd/sssd.conf",
+                           f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
+                           "matchrule", f"UID={local_user().USERNAME_LOCAL}",
+                           True, ["sssd"])])
 def test_wrong_subject_in_matchrule(user, edit_config):
     """Test smart card login fail when sssd.conf contain wrong subject in
     the matchrule."""
