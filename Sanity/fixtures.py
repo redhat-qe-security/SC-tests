@@ -20,7 +20,8 @@ class User:
                 cmd = f'su - {self.USERNAME_LOCAL} -c "su - ' \
                       f'{self.USERNAME_LOCAL} -c whoami"'
                 output = run_cmd(cmd, passwd=self.PIN_LOCAL, pin=True)
-                check_output(output, expect=self.USERNAME_LOCAL)
+                check_output(output, expect=self.USERNAME_LOCAL,
+                             zero_rc=True, check_rc=True)
 
     def su_login_local_with_passwd(self):
         with Authselect(required=False):
@@ -28,7 +29,8 @@ class User:
                 cmd = f'su - {self.USERNAME_LOCAL} -c "su - ' \
                       f'{self.USERNAME_LOCAL} -c whoami"'
                 output = run_cmd(cmd, passwd=self.PASSWD_LOCAL, pin=False)
-                check_output(output, expect=self.USERNAME_LOCAL)
+                check_output(output, expect=self.USERNAME_LOCAL,
+                             zero_rc=True, check_rc=True)
 
 
 @pytest.fixture()
