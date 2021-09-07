@@ -24,6 +24,22 @@ def test_su_login_p11_uri_wrong_slot_description(user, edit_config):
 
 
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
+                         [("/etc/sssd/sssd.conf", "pam", "p11_uri",
+                           "pkcs11:slot-description=Virtual%20PCD%2000%2000",
+                            True, ["sssd"]),
+                          ("/etc/sssd/sssd.conf",
+                           f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
+                           "matchrule", "<SUBJECT>.*CN=testuser.*",
+                           True, ["sssd"])])
+def test_su_login_p11_uri_user_mismatch(user, edit_config):
+    """Test smart card login fail when sssd.conf do not contain user from
+    the smart card (wrong user in matchrule)"""
+    with pytest.raises(PatternNotFound):
+        user.su_login_local_with_sc()
+    user.su_login_local_with_passwd()
+
+
+@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
                          [("/etc/sssd/sssd.conf",
                            f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
                            "matchrule", "<SUBJECT>.*CN=testuser.*",
