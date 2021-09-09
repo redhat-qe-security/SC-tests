@@ -1,6 +1,8 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
-from fixtures import *
 import pytest
+
+from fixtures import *
+from SCAutolib.src.exceptions import PatternNotFound
 
 
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
