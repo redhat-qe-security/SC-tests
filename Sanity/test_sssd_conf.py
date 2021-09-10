@@ -34,8 +34,8 @@ def test_su_login_p11_uri_user_mismatch(user, edit_config):
     """Test smart card login fail when sssd.conf do not contain user from
     the smart card (wrong user in matchrule)"""
     edit_config_("/etc/sssd/sssd.conf", f"certmap/shadowutils/{user.USERNAME_LOCAL}", "matchrule", "<SUBJECT>.*CN=testuser.*")
-    destination_path = backup_(file_path)
-    show_file_diff(file_path, destination_path)
+    destination_path = backup_("/etc/sssd/sssd.conf")
+    show_file_diff("/etc/sssd/sssd.conf", destination_path)
     restart_service("sssd")
     with pytest.raises(PatternNotFound):
         user.su_login_local_with_sc()
@@ -50,6 +50,8 @@ def test_su_login_p11_uri_user_mismatch(user, edit_config):
 def test_user_mismatch(user, edit_config):
     """Test smart card login fail when sssd.conf do not contain user from
     the smart card (wrong user in matchrule)"""
+    with pytest.raises(PatternNotFound):
+        user.su_login_local_with_sc()
     user.su_login_local_with_passwd()
 
 

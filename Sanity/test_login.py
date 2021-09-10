@@ -8,13 +8,7 @@ from fixtures import *
 
 def test_su_login_with_sc(user):
     """Basic su login to the user with a smart card."""
-    with Authselect(required=False):
-        with VirtCard(user.USERNAME_LOCAL, insert=True):
-            cmd = f'su - {user.USERNAME_LOCAL} -c "su - ' \
-                  f'{user.USERNAME_LOCAL} -c whoami"'
-            output = run_cmd(cmd, passwd=user.PIN_LOCAL, pin=True)
-            check_output(output, expect=user.USERNAME_LOCAL)
-
+    user.su_login_local_with_sc()
 
 def test_su_login_with_sc_wrong(user):
     """Basic su login to the user with a smart card."""
