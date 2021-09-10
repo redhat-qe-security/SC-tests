@@ -8,11 +8,10 @@ from SCAutolib.src.utils import (run_cmd, check_output, edit_config_,
 
 
 class User:
-    def __init__(self):
-        self.ROOT_PASSWD = read_config("root_passwd")
-        self.USERNAME_LOCAL = read_config("local_user.name")
-        self.PASSWD_LOCAL = read_config("local_user.passwd")
-        self.PIN_LOCAL = read_config("local_user.pin")
+    ROOT_PASSWD = read_config("root_passwd")
+    USERNAME_LOCAL = None
+    PASSWD_LOCAL = None
+    PIN_LOCAL = None
 
     def su_login_local_with_sc(self):
         with Authselect(required=False):
@@ -31,6 +30,20 @@ class User:
                 output = run_cmd(cmd, passwd=self.PASSWD_LOCAL, pin=False)
                 check_output(output, expect=self.USERNAME_LOCAL,
                              zero_rc=True, check_rc=True)
+
+
+class LocalUser(User):
+    def __init__(self):
+        self.USERNAME_LOCAL = read_config("local_user.name")
+        self.PASSWD_LOCAL = read_config("local_user.passwd")
+        self.PIN_LOCAL = read_config("local_user.pin")
+
+
+class IPAUser(User):
+    def __init__(self):
+        self.USERNAME = read_config("ipa_user.name")
+        self.PASSWD = read_config("ipa_user.passwd")
+        self.PIN = read_config("ipa_user.pin")
 
 
 @pytest.fixture()
@@ -53,13 +66,23 @@ def edit_config(file_path, section, key, value, restore, restart):
 
 
 def local_user():
-    return User()
+    return LocalUser()
+
+
+def ipa_user_():
+    return IPAUser()
 
 
 @pytest.fixture(name="user")
 def user_indirect():
     """Returns an object of local user"""
     return local_user()
+
+
+@pytest.fixture(name="ipa_user")
+def ipa_user_indirect():
+    """Returns an object of IPA user"""
+    return ipa_user_()
 
 
 @pytest.fixture()
