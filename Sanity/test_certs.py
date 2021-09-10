@@ -25,6 +25,7 @@ def test_wrong_issuer_cert(user, backup):
 
     with pytest.raises(PatternNotFound):
         user.su_login_local_with_sc()
+    user.su_login_local_with_passwd()
 
     remove(new_cert)
     remove(new_key)
