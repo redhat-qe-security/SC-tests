@@ -3,6 +3,7 @@ import pytest
 
 from fixtures import *
 from SCAutolib.src.exceptions import PatternNotFound
+from SCAutolib.src.utils import (edit_config_, backup_, show_file_diff)
 
 
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
@@ -28,14 +29,14 @@ def test_su_login_p11_uri_wrong_slot_description(user, edit_config):
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
                          [("/etc/sssd/sssd.conf", "pam", "p11_uri",
                            "pkcs11:slot-description=Virtual%20PCD%2000%2000",
-                            True, ["sssd"]),
-                          ("/etc/sssd/sssd.conf",
-                           f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
-                           "matchrule", "<SUBJECT>.*CN=testuser.*",
-                           True, ["sssd"])])
+                            True, ["sssd"])])
 def test_su_login_p11_uri_user_mismatch(user, edit_config):
     """Test smart card login fail when sssd.conf do not contain user from
     the smart card (wrong user in matchrule)"""
+    edit_config_("/etc/sssd/sssd.conf", f"certmap/shadowutils/{user.USERNAME_LOCAL}", "matchrule", "<SUBJECT>.*CN=testuser.*")
+    destination_path = backup_(file_path)
+    show_file_diff(file_path, destination_path)
+    restart_service("sssd")
     with pytest.raises(PatternNotFound):
         user.su_login_local_with_sc()
     user.su_login_local_with_passwd()
