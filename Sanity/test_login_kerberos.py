@@ -6,6 +6,8 @@ import pytest
 
 
 def test_smart_card_login_enforcing(ipa_user):
+    """Test kerberos user tries to logging to the system with smart card. Smart
+    card is enforced."""
     with Authselect(lock_on_removal=True, mk_homedir=True, required=True):
         with VirtCard(ipa_user.USERNAME, insert=False) as sc:
             sc.remove()
@@ -19,6 +21,8 @@ def test_smart_card_login_enforcing(ipa_user):
 
 
 def test_kerberos_change_passwd(ipa_user):
+    """Kerberos user tries to change it kerberos password after user is logged in
+     to the system with smart card"""
     try:
         with Authselect(lock_on_removal=True):
             with VirtCard(ipa_user.USERNAME, insert=False) as f:
@@ -58,3 +62,18 @@ def test_kerberos_change_passwd(ipa_user):
 
         i = shell.expect(f'Changed password for "{ipa_user.USERNAME}', timeout=5)
         assert i == 0
+
+
+def test_kerberos_login_to_root(ipa_user):
+    """Kerberos user tries to login to root with root password when after
+    user is logged in with smart card. Smart card is enforced."""
+    with Authselect(lock_on_removal=True, mk_homedir=True, required=True):
+        with VirtCard(ipa_user.USERNAME, insert=True):
+            cmd = "su ipa-user-3 -c 'su ipa-user-3'"
+            shell = run_cmd(cmd, return_val="shell")
+            shell.expect(f"PIN for {ipa_user.USERNAME}", timeout=10)
+            shell.sendline(ipa_user.PIN)
+            shell.sendline("su - -c 'whoami'")
+            shell.expect("Password")
+            shell.sendline(ipa_user.ROOT_PASSWD)
+            shell.expect("root")
