@@ -1,9 +1,21 @@
-import pytest
 from SCAutolib.src.authselect import Authselect
-from SCAutolib.src.env import read_config
-from SCAutolib.src.utils import run_cmd, check_output
+from SCAutolib.src.utils import run_cmd
 from SCAutolib.src.virt_card import VirtCard
-from fixtures import *
+from fixtures import ipa_user_indirect
+import pytest
+
+
+def test_smart_card_login_enforcing(ipa_user):
+    with Authselect(lock_on_removal=True, mk_homedir=True, required=True):
+        with VirtCard(ipa_user.USERNAME, insert=False) as sc:
+            sc.remove()
+            cmd = f"sssctl user-checks -s gdm-smartcard {ipa_user.USERNAME} -a auth"
+            shell = run_cmd(cmd, return_val="shell")
+            shell.expect("Please insert smart card", timeout=10)
+            sc.insert()
+            shell.expect(f"PIN for {ipa_user.USERNAME}:")
+            shell.sendline(ipa_user.PIN)
+            shell.expect(f"pam_authenticate for user \[{ipa_user.USERNAME}\]: Success")
 
 
 def test_kerberos_change_passwd(ipa_user):
