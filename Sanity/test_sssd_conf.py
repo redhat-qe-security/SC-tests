@@ -40,8 +40,8 @@ def test_matchrule_defined_for_other_user(user, edit_config):
     with open("/etc/sssd/sssd.conf", "r") as sources:
         sourcesdata = sources.read()
     sourcesdata = sourcesdata.replace(f'[certmap/shadowutils/{user.USERNAME}]', '[certmap/shadowutils/testuser]')
-        with open("/etc/sssd/sssd.conf", "w") as sources:
-            sources.write(sourcesdata)
+    with open("/etc/sssd/sssd.conf", "w") as sources:
+        sources.write(sourcesdata)
     # print sssd.conf; restart service
     print("Custom changes were made in sssd.conf file:")
     print(sourcesdata)
