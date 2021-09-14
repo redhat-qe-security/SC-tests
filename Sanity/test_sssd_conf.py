@@ -53,6 +53,7 @@ def test_user_mismatch(user, edit_config):
     the smart card (wrong user in matchrule)"""
     with pytest.raises(PatternNotFound):
         user.su_login_local_with_sc()
+<<<<<<< HEAD
     user.su_login_local_with_passwd()
 
 
@@ -78,6 +79,8 @@ def test_matchrule_defined_for_other_user(user, edit_config):
     # run tests
     with pytest.raises(PatternNotFound):
         user.su_login_local_with_sc()
+=======
+>>>>>>> dcf610459477dc2f8d7265a453789fc49b415ee4
     user.su_login_local_with_passwd()
 
 
