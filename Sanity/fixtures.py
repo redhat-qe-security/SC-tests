@@ -55,7 +55,6 @@ def edit_config(file_path, section, key, value, restore, restart):
     edit_config_(file_path, section, key, value)
     for service in restart:
         restart_service(service)
-    show_file_diff(file_path, destination_path)
 
     yield
 

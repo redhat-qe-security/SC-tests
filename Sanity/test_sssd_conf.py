@@ -5,8 +5,10 @@ import re
 from fixtures import *
 from SCAutolib.src.exceptions import PatternNotFound
 from SCAutolib.src.utils import (edit_config_, backup_, show_file_diff)
+from SCAutolib.src import env_logger
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
                          [("/etc/sssd/sssd.conf", "pam", "p11_uri",
                            "pkcs11:slot-description=Virtual%20PCD%2000%2000", True,
@@ -39,12 +41,14 @@ def test_matchrule_defined_for_other_user(user, edit_config):
     # change section of sssd.conf to get [certmap/shadowutils/testuser]
     with open("/etc/sssd/sssd.conf", "r") as sources:
         sourcesdata = sources.read()
-    sourcesdata = sourcesdata.replace(f'[certmap/shadowutils/{user.USERNAME_LOCAL}]', '[certmap/shadowutils/testuser]')
+    sourcesdata = sourcesdata.replace(
+        f'[certmap/shadowutils/{user.USERNAME_LOCAL}]',
+        '[certmap/shadowutils/testuser]')
     with open("/etc/sssd/sssd.conf", "w") as sources:
         sources.write(sourcesdata)
     # print sssd.conf; restart service
-    print("Custom changes were made in sssd.conf file:")
-    print(sourcesdata)
+    env_logger.warning("Custom changes were made in sssd.conf file:")
+    env_logger.info(sourcesdata)
     restart_service("sssd")
     # run tests
     with pytest.raises(PatternNotFound):
@@ -55,18 +59,20 @@ def test_matchrule_defined_for_other_user(user, edit_config):
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
                          [("/etc/sssd/sssd.conf", "pam", "p11_uri",
                            "pkcs11:slot-description=Virtual%20PCD%2000%2000",
-                            True, ["sssd"])])
+                           True, ["sssd"])])
 def test_su_login_p11_uri_user_mismatch(user, edit_config):
     """Test smart card login fail when sssd.conf do not contain user from
     the smart card (wrong user in matchrule)"""
-    edit_config_("/etc/sssd/sssd.conf", f"certmap/shadowutils/{user.USERNAME_LOCAL}", "matchrule", "<SUBJECT>.*CN=testuser.*")
+    edit_config_("/etc/sssd/sssd.conf",
+                 f"certmap/shadowutils/{user.USERNAME_LOCAL}",
+                 "matchrule",
+                 "<SUBJECT>.*CN=testuser.*")
     destination_path = backup_("/etc/sssd/sssd.conf")
     show_file_diff("/etc/sssd/sssd.conf", destination_path)
     restart_service("sssd")
     with pytest.raises(PatternNotFound):
         user.su_login_local_with_sc()
     user.su_login_local_with_passwd()
-
 
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
                          [("/etc/sssd/sssd.conf",
