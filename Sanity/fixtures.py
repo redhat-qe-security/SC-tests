@@ -1,10 +1,12 @@
+import sys
+
+import pexpect
 import pytest
 from SCAutolib.src import read_config
 from SCAutolib.src.authselect import Authselect
-from SCAutolib.src.virt_card import VirtCard
 from SCAutolib.src.utils import (run_cmd, check_output, edit_config_,
-                                 restart_service, backup_, restore_file_,
-                                 show_file_diff)
+                                 restart_service, backup_, restore_file_)
+from SCAutolib.src.virt_card import VirtCard
 
 
 class User:
@@ -102,3 +104,11 @@ def backup(file_path, restore, restart):
         restore_file_(target, file_path)
         for service in restart:
             restart_service(service)
+
+
+@pytest.fixture
+def user_shell():
+    """Creates shell with some local user as a starting point for test."""
+    shell = pexpect.spawn("/usr/bin/sh -c 'su base-user'", encoding="utf-8")
+    shell.logfile = sys.stdout
+    return shell
