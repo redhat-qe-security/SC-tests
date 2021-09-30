@@ -4,7 +4,7 @@ import pexpect
 from SCAutolib.src.authselect import Authselect
 from SCAutolib.src.utils import run_cmd, check_output
 from SCAutolib.src.virt_card import VirtCard
-from fixtures import ipa_user_indirect
+from fixtures import ipa_user_indirect, user_shell
 import pytest
 
 """General setup for this set of tests:
@@ -79,7 +79,7 @@ def test_kerberos_change_passwd(ipa_user):
 
 def test_kerberos_login_to_root(ipa_user):
     """Kerberos user tries to switch to the root user with root password after
-    user is logged in with smart card. Smart card is enforced.
+    kerberos user is logged in with smart card. Smart card is required.
 
     Setup
         1. General setup
@@ -107,9 +107,47 @@ def test_kerberos_login_to_root(ipa_user):
             shell.expect("root")
 
 
-def test_kerberos_user_sudo_wrong_password(ipa_user):
+def test_krb_user_su_to_root_wrong_passwd_sc_required_no_sc(ipa_user, user_shell):
+    """Kerberos user tries to switch to the root user with root password after
+       kerberos user is logged in with smart card. Smart card is required.
+
+       Setup
+           1. General setup
+           2. Setup authselect: authselect select sssd with-smartcard with-smartcard-required
+           3. Insert the card
+           4. Switch to kerberos user (su kerberos_username)
+           5. System asks for smartcard PIN -> insert correct smartcard PIN
+           6. User is successfully logged in
+           7. Try to switch to root (su -)
+
+       Expected result
+           1. User is asked to insert root password
+           2. User inserts wrong root password
+           3. User is not switched to the root user, corresponding message is
+              written to the output
+       """
+    with Authselect(required=True):
+        with VirtCard(username=ipa_user.USERNAME, insert=True) as sc:
+            cmd = f"su {ipa_user.USERNAME}"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"PIN for {ipa_user.USERNAME}:")
+            user_shell.sendline(ipa_user.PIN)
+            cmd = "whoami"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(ipa_user.USERNAME)
+            sc.remove()
+
+            cmd = "su -"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact("Password:")
+            user_shell.sendline("wrong_password")
+            user_shell.expect_exact("su: Authentication failure")
+
+
+def test_kerberos_user_sudo_wrong_password(ipa_user, user_shell):
     """Kerberos user tries to use sudo to access some application and mistype
-    the password. No need of smartcard.
+    the password. Smartcard is required and used for user login and removed
+    after login.
 
     Setup
         1. General setup
@@ -127,8 +165,42 @@ def test_kerberos_user_sudo_wrong_password(ipa_user):
     """
 
     with Authselect(required=True):
-        cmd = f"su - {ipa_user.USERNAME} -c 'sudo -S ls /'"
-        shell = pexpect.spawn(cmd, encoding='utf-8', logfile=sys.stdout)
-        shell.expect(rf"\[sudo\] password for {ipa_user.USERNAME}:")
-        shell.sendline("098765432")
-        shell.expect("Sorry, try again.")
+        with VirtCard(username=ipa_user.USERNAME, insert=True) as sc:
+            cmd = f"su - {ipa_user.USERNAME} -c 'sudo -S ls /'"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"PIN for {ipa_user.USERNAME}:")
+            user_shell.sendline(ipa_user.PIN)
+
+            cmd = "whoami"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(ipa_user.USERNAME)
+
+            sc.remove()
+
+            cmd = "sudo -S ls /"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"[sudo] password for {ipa_user.USERNAME}:")
+            user_shell.sendline("098765432")
+            user_shell.expect("Sorry, try again.")
+
+
+def test_krb_user_sudo_correct_password_sc_required_no_sc(ipa_user, user_shell):
+    with Authselect(required=True):
+        with VirtCard(username=ipa_user.USERNAME, insert=True) as sc:
+            output = pexpect.run("ls /", encoding="utf-8")
+            cmd = f"su - {ipa_user.USERNAME}"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"PIN for {ipa_user.USERNAME}:")
+            user_shell.sendline(ipa_user.PIN)
+
+            cmd = "whoami"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(ipa_user.USERNAME)
+
+            sc.remove()
+
+            cmd = "sudo -S ls /"
+            user_shell.sendline(cmd)
+            user_shell.expect(rf"\[sudo\] password for {ipa_user.USERNAME}:")
+            user_shell.sendline(ipa_user.PASSWD)
+            user_shell.expect(output)
