@@ -54,10 +54,10 @@ def test_smart_card_gdm_login_enforcing(ipa_user):
             shell.expect(rf"pam_authenticate for user \[{ipa_user.USERNAME}\]: Success")
 
 
-@pytest.mark.skip(reason="Need fix due to specific password changing with IPA server")
-def test_kerberos_change_passwd(ipa_user):
+# @pytest.mark.skip(reason="Need fix due to specific password changing with IPA server")
+def test_kerberos_change_passwd(ipa_user, user_shell):
     """Kerberos user tries to change it kerberos password after user is logged
-    in to the system with smartcard
+    in to the system with smartcard 
 
     Setup
         1. General setup
@@ -73,11 +73,13 @@ def test_kerberos_change_passwd(ipa_user):
     with Authselect():
         with VirtCard(ipa_user.USERNAME, insert=True) as f:
             cmd = f"su {ipa_user.USERNAME} -c 'passwd'"
-            out = run_cmd(cmd)
-            check_output(out, [f"Changing password for user {ipa_user.USERNAME}."], check_rc=False)
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"PIN for {ipa_user.USERNAME}:")
+            user_shell.sendline(ipa_user.PIN)
+            user_shell.expect_exact(f"Changing password for user {ipa_user.USERNAME}.")
 
 
-def test_kerberos_login_to_root(ipa_user):
+def test_kerberos_login_to_root(ipa_user, user_shell):
     """Kerberos user tries to switch to the root user with root password after
     kerberos user is logged in with smart card. Smart card is required.
 
@@ -97,14 +99,13 @@ def test_kerberos_login_to_root(ipa_user):
     """
     with Authselect(required=True):
         with VirtCard(ipa_user.USERNAME, insert=True):
-            cmd = f"su {ipa_user.USERNAME} -c 'su {ipa_user.USERNAME}'"
-            shell = run_cmd(cmd, return_val="shell")
-            shell.expect(f"PIN for {ipa_user.USERNAME}", timeout=10)
-            shell.sendline(ipa_user.PIN)
-            shell.sendline("su - -c 'whoami'")
-            shell.expect("Password")
-            shell.sendline(ipa_user.ROOT_PASSWD)
-            shell.expect("root")
+            user_shell.sendline(f"su - {ipa_user.USERNAME}")
+            user_shell.expect(f"PIN for {ipa_user.USERNAME}", timeout=10)
+            user_shell.sendline(ipa_user.PIN)
+            user_shell.sendline("su - -c 'whoami'")
+            user_shell.expect("Password")
+            user_shell.sendline(ipa_user.ROOT_PASSWD)
+            user_shell.expect("root")
 
 
 def test_krb_user_su_to_root_wrong_passwd_sc_required_no_sc(ipa_user, user_shell):
