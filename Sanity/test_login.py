@@ -1,8 +1,3 @@
-import pytest
-from SCAutolib.src.authselect import Authselect
-from SCAutolib.src.env import read_config
-from SCAutolib.src.utils import run_cmd, check_output
-from SCAutolib.src.virt_card import VirtCard
 from fixtures import *
 
 """Note: as all tests are executed from root user, first login to any user

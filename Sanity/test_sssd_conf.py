@@ -1,6 +1,4 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
-import pytest
-import re
 
 from fixtures import *
 from SCAutolib.src.exceptions import PatternNotFound

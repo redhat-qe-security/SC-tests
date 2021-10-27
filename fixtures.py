@@ -106,7 +106,7 @@ def backup(file_path, restore, restart):
             restart_service(service)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def user_shell():
     """Creates shell with some local user as a starting point for test."""
     shell = pexpect.spawn("/usr/bin/sh -c 'su base-user'", encoding="utf-8")

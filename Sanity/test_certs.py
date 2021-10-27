@@ -2,7 +2,6 @@
 from os import remove
 from subprocess import run
 
-import pytest
 from SCAutolib.src import utils
 from SCAutolib.src.env import run
 from fixtures import *
