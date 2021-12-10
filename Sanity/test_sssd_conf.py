@@ -1,8 +1,7 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
-
 from fixtures import *
 from SCAutolib.src.exceptions import PatternNotFound
-from SCAutolib.src.utils import (edit_config_, backup_, show_file_diff)
+from SCAutolib.src.utils import (edit_config_, backup_)
 from SCAutolib.src import env_logger
 
 
@@ -66,11 +65,11 @@ def test_su_login_p11_uri_user_mismatch(user, edit_config):
                  "matchrule",
                  "<SUBJECT>.*CN=testuser.*")
     destination_path = backup_("/etc/sssd/sssd.conf")
-    show_file_diff("/etc/sssd/sssd.conf", destination_path)
     restart_service("sssd")
     with pytest.raises(PatternNotFound):
         user.su_login_local_with_sc()
     user.su_login_local_with_passwd()
+
 
 @pytest.mark.parametrize("file_path,section,key,value,restore,restart",
                          [("/etc/sssd/sssd.conf",
