@@ -29,7 +29,7 @@ def test_smart_card_gdm_login_enforcing(ipa_user):
             sc.remove()
             cmd = f"sssctl user-checks -s gdm-smartcard {ipa_user.USERNAME} -a auth"
             shell = run_cmd(cmd, return_val="shell")
-            shell.expect("Please insert smart card", timeout=10)
+            shell.expect(r"Please (insert|enter) smart card", timeout=10)
             sc.insert()
             shell.expect(f"PIN for {ipa_user.USERNAME}:")
             shell.sendline(ipa_user.PIN)
