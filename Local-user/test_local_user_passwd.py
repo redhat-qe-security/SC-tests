@@ -4,7 +4,8 @@ from SCAutolib.src.virt_card import VirtCard
 from fixtures import user_indirect, user_shell
 
 
-def test_change_local_user_passwd(user, user_shell):
+@pytest.mark.parametrize("required", [True, False])
+def test_change_local_user_passwd(user, user_shell, required):
     """Run 'passwd' command when smartcard login is enforced and after user is
     authenticated in with a smartcard.
 
@@ -37,7 +38,7 @@ def test_change_local_user_passwd(user, user_shell):
         - Users is asked to change it local password
         - No mentioning of the smart card
     """
-    with Authselect(required=True):
+    with Authselect(required=required):
         with VirtCard(user.USERNAME_LOCAL, insert=True):
             cmd = f"su {user.USERNAME_LOCAL} -c 'passwd'"
             user_shell.sendline(cmd)
