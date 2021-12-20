@@ -5,7 +5,8 @@ from fixtures import user_indirect, user_shell
 
 
 def test_change_local_user_passwd(user, user_shell):
-    """SU login with user password, smartcard is not required.
+    """Run 'passwd' command when smartcard login is enforced and after user is
+    authenticated in with a smartcard.
 
     Setup
         1. Create local CA
