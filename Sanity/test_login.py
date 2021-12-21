@@ -165,7 +165,7 @@ def test_su_login_without_sc(user):
         check_output(output, expect=[user.USERNAME_LOCAL])
 
 
-def test_su_to_root(user):
+def test_su_to_root(user, user_shell):
     """Test for smartcard login to the local user and then switching to root (su -).
 
     Setup
@@ -201,11 +201,11 @@ def test_su_to_root(user):
     """
     with Authselect():
         with VirtCard(user.USERNAME_LOCAL, insert=True) as sc:
-            shell = run_cmd(f'bash -c "su - {user.USERNAME_LOCAL}"', return_val="shell")
-            shell.sendline(f"su - {user.USERNAME_LOCAL}")
-            shell.sendline(user.PIN_LOCAL)
-            shell.sendline("whoami")
-            shell.expect(user.USERNAME_LOCAL)
-            shell.sendline('su - root -c "whoami"')
-            shell.sendline(user.ROOT_PASSWD)
-            shell.expect("root")
+            user_shell.sendline(f"su - {user.USERNAME_LOCAL}")
+            user_shell.expect(f"PIN for {user.USERNAME_LOCAL}:")
+            user_shell.sendline(user.PIN_LOCAL)
+            user_shell.sendline("whoami")
+            user_shell.expect(user.USERNAME_LOCAL)
+            user_shell.sendline('su - root -c "whoami"')
+            user_shell.sendline(user.ROOT_PASSWD)
+            user_shell.expect("root")
