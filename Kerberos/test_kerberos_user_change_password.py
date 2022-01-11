@@ -2,7 +2,7 @@ import pytest
 from SCAutolib.src.authselect import Authselect
 from SCAutolib.src.virt_card import VirtCard
 
-from fixtures import ipa_user_, ipa_user_indirect, user_shell
+from fixtures import ipa_user_, ipa_user, user_shell
 
 
 @pytest.mark.parametrize("required,insert,expect,secret",

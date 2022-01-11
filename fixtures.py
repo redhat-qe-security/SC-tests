@@ -80,8 +80,8 @@ def user_indirect():
     return local_user()
 
 
-@pytest.fixture(name="ipa_user")
-def ipa_user_indirect():
+@pytest.fixture()
+def ipa_user():
     """Returns an object of IPA user"""
     return ipa_user_()
 
