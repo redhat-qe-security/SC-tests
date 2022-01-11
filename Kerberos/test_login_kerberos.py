@@ -161,48 +161,24 @@ def test_krb_user_sudo_correct_password_sc_required_no_sc(ipa_user, user_shell):
             user_shell.expect(output)
 
 
-def test_krb_user_ssh(ipa_user, user_shell):
-    with Authselect(required=False):
-        with VirtCard(username=ipa_user.USERNAME, insert=True) as sc:
-            user_shell.sendline(f"ssh -o StrictHostKeyChecking=no {ipa_user.USERNAME}@localhost")
-            user_shell.expect_exact(f"Password")
-            user_shell.sendline(ipa_user.PASSWD)
-            user_shell.sendline(f"whoami")
-            user_shell.expect_exact(ipa_user.USERNAME)
+def test_krb_user_su_correct_password(ipa_user, user_shell):
+    """Kerberos' user login with command su using correct password.
 
+    Setup:
+        1. General setup
+        2. Smart card is NOT required for login
+        3. Smart card is NOT inserted
+        4. Run su ipa-user
 
-def test_krb_user_scp(ipa_user, user_shell):
-    with Authselect(required=False):
-        with VirtCard(username=ipa_user.USERNAME, insert=True) as sc:
-            user_shell.sendline('touch /tmp/scp_test_file')
-            _, retcode = pexpect.run(f'scp -o StrictHostKeyChecking=no /tmp/scp_test_file {ipa_user.USERNAME}@localhost:/tmp/scp_test_file_copied',
-                                    events={'(?i)password': ipa_user.PASSWD + '\n'}, #If we are prompted for password, enter ipa password + enter
-                                    withexitstatus=1)
-            assert isfile('/tmp/scp_test_file_copied')
-            assert retcode == 0
-
-
-def test_krb_user_ssh_required(ipa_user, user_shell):
-    with Authselect(required=True):
-        with VirtCard(username=ipa_user.USERNAME, insert=True) as sc:
-            user_shell.sendline(f"ssh -o StrictHostKeyChecking=no {ipa_user.USERNAME}@localhost")
-            user_shell.expect_exact(f"Password")
-            user_shell.sendline(ipa_user.PASSWD)
-            # When smart card is required, SSH will fail even if we provide
-            # the correct password and will ask for password again.
-            user_shell.expect_exact(f"Password") # Expect the second Password prompt.
-            user_shell.sendcontrol('c') # Send control-C to exit the prompt
-
-
-def test_krb_user_scp_required(ipa_user, user_shell):
-    with Authselect(required=True):
-        with VirtCard(username=ipa_user.USERNAME, insert=True) as sc:
-            user_shell.sendline('touch /tmp/scp_test_file1')
-            user_shell.sendline(f'scp -o StrictHostKeyChecking=no -o ConnectTimeout=5 /tmp/scp_test_file1 {ipa_user.USERNAME}@localhost:/tmp/scp_test_file_copied1')
-            user_shell.expect_exact(f"Password")
-            user_shell.sendline(ipa_user.PASSWD)
-            # When smart card is required, SCP will fail even if we provide
-            # the correct password and will ask for password again.
-            user_shell.expect_exact(f"Password") # Expect the second Password prompt.
-            user_shell.sendcontrol('c') # Send control-C to exit the prompt
-            assert not isfile('/tmp/scp_test_file_copied1')
+    Expected result:
+        - user is prompted to insert kerberos password
+        - after inserting the password, user is successfully authenticated
+    """
+    with Authselect():
+        cmd = f"su {ipa_user.USERNAME}"
+        user_shell.sendline(cmd)
+        user_shell.expect_exact("Password:")
+        user_shell.sendline(ipa_user.PASSWD)
+        user_shell.sendline("whoami")
+        user_shell.expect_exact(ipa_user.USERNAME)
+        user_shell.close()
