@@ -1,16 +1,12 @@
-import sys
-
 import pexpect
 from SCAutolib.src.authselect import Authselect
-from SCAutolib.src.utils import run_cmd, check_output
+from SCAutolib.src.utils import run_cmd
 from SCAutolib.src.virt_card import VirtCard
-from fixtures import ipa_user_indirect, user_shell
-from os.path import isfile
-import pytest
+from fixtures import user_shell, ipa_user
 
 
 def test_smart_card_gdm_login_enforcing(ipa_user):
-    """Test kerberos user tries to logging to the GDM with smart card. Smart
+    """Test kerberos user tries to login to the GDM with smart card. Smart
     card is enforced.
 
     Setup
