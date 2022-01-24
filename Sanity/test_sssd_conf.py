@@ -3,6 +3,7 @@ from fixtures import *
 from SCAutolib.src.exceptions import PatternNotFound
 from SCAutolib.src.utils import (edit_config_, backup_)
 from SCAutolib.src import env_logger
+import pytest
 
 
 @pytest.mark.skip
