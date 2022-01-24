@@ -1,12 +1,18 @@
+import http.server
+import ssl
+import subprocess as subp
 import sys
+import threading
+from time import sleep
 
 import pexpect
 import pytest
-from SCAutolib.src import read_config
+from SCAutolib.src import read_config, LIB_CERTS, LIB_CA, LIB_KEYS
 from SCAutolib.src.authselect import Authselect
 from SCAutolib.src.utils import (run_cmd, check_output, edit_config_,
                                  restart_service, backup_, restore_file_)
 from SCAutolib.src.virt_card import VirtCard
+import python_freeipa as pipa
 
 
 class User:
@@ -112,3 +118,81 @@ def user_shell():
     shell = pexpect.spawn("/usr/bin/sh -c 'su base-user'", encoding="utf-8")
     shell.logfile = sys.stdout
     return shell
+
+
+@pytest.fixture(scope="function")
+def root_shell():
+    """Creates root shell."""
+    shell = pexpect.spawn("/usr/bin/sh ", encoding="utf-8")
+    shell.logfile = sys.stdout
+    return shell
+
+
+@pytest.fixture
+def ipa_meta_client():
+    """Ready-to-user admin Meta Client for IPA server."""
+    hostname, passwd = read_config("ipa_server_hostname", "ipa_server_admin_passwd")
+    client = pipa.ClientMeta(hostname, verify_ssl=False)
+    client.login("admin", passwd)
+    return client
+
+
+def _https_server(principal, ca, ipa_meta_client, *args, **kwargs):
+    server_address = ("127.0.0.1", 8888)
+    key = f"{LIB_KEYS}/key-{principal}.pem"
+    csr = f"{LIB_CERTS}/{principal}.csr"
+    cert_path = f"{LIB_CERTS}/cert-{principal}.pem"
+
+    subp.check_output(["openssl", "req", "-new", "-days", "365",
+                       "-nodes", "-newkey", "rsa:4096", "-keyout", key,
+                       "-out", csr, "-subj", f"/CN={principal}"],
+                      encoding='utf-8')
+    with open(csr, "r") as f:
+        csr_content = f.read()
+
+    ca_cert = None
+    if ca == "ipa":
+        ca_cert = "/etc/ipa/ca.crt"
+        resp = ipa_meta_client.cert_request(a_csr=csr_content, o_principal=principal)
+        cert = resp["result"]["certificate"]
+        begin = "-----BEGIN CERTIFICATE-----"
+        end = "-----END CERTIFICATE-----"
+        cert = f"{begin}\n{cert}\n{end}"
+        with open(cert_path, "w") as f:
+            f.write(cert)
+    else:
+        raise Exception("Other then IPA CA is not implemented yet")
+
+    httpd = http.server.HTTPServer(server_address, http.server.SimpleHTTPRequestHandler)
+
+    httpd.socket = ssl.wrap_socket(httpd.socket,
+                                   server_side=True,
+                                   certfile=cert_path,
+                                   keyfile=key,
+                                   ca_certs=ca_cert,
+                                   ssl_version=ssl.PROTOCOL_TLSv1_2,
+                                   cert_reqs=ssl.CERT_REQUIRED,
+                                   do_handshake_on_connect=True)
+    httpd.serve_forever()
+
+
+@pytest.fixture
+def https_server(principal, ca, ipa_meta_client):
+    """Start HTTPS server """
+    try:
+        ipa_meta_client.user_add(principal, "https", "server", principal,
+                                 o_userpassword='redhat')
+    except pipa.exceptions.DuplicateEntry:
+        pass
+
+    server_t = threading.Thread(name='daemon_server',
+                                args=(principal, ca, ipa_meta_client,),
+                                daemon=True,
+                                target=_https_server)
+    server_t.start()
+
+    sleep(5)
+    yield principal
+
+    ipa_meta_client.user_del(principal, o_preserve=False)
+    server_t.join(timeout=1)
