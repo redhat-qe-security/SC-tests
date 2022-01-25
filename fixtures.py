@@ -13,6 +13,7 @@ from SCAutolib.src.authselect import Authselect
 from SCAutolib.src.utils import (run_cmd, check_output, edit_config_,
                                  restart_service, backup_, restore_file_)
 from SCAutolib.src.virt_card import VirtCard
+import python_freeipa as pipa
 
 
 class User:
@@ -154,10 +155,10 @@ def _https_server(principal, ca, ipa_meta_client, *args, **kwargs):
     if ca == "ipa":
         ca_cert = "/etc/ipa/ca.crt"
         resp = ipa_meta_client.cert_request(a_csr=csr_content, o_principal=principal)
-        base_64 = resp["result"]["certificate"]
+        cert = resp["result"]["certificate"]
         begin = "-----BEGIN CERTIFICATE-----"
         end = "-----END CERTIFICATE-----"
-        cert = f"{begin}\n{base_64}\n{end}"
+        cert = f"{begin}\n{cert}\n{end}"
         with open(cert_path, "w") as f:
             f.write(cert)
     else:
@@ -184,6 +185,7 @@ def https_server(principal, ca, ipa_meta_client):
                                  o_userpassword='redhat')
     except pipa.exceptions.DuplicateEntry:
         pass
+
     server_t = threading.Thread(name='daemon_server',
                                 args=(principal, ca, ipa_meta_client,),
                                 daemon=True,
@@ -195,7 +197,8 @@ def https_server(principal, ca, ipa_meta_client):
 
     server_t.join(timeout=1)
     resp = ipa_meta_client.cert_find(user=principal)["result"]
-    assert len(resp) == 1, "Only one certificate should be matched"
+    assert len(resp) == 1, "Only one certificate should be matched. " \
+                           f"Number of matched certs is {len(resp)}"
     resp = resp[0]
     assert resp["status"].lower() == "valid", "Certificate is not valid"
     assert not resp["revoked"], "Certificate is revoked"
