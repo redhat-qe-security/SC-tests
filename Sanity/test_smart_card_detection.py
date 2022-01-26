@@ -21,7 +21,8 @@ def test_modutil_token_info(user, root_shell):
 def test_pam_services_config(user, root_shell, edit_config):
     """Test for PAM configuration for smart card authentication.
     GitHub issue: https://github.com/SSSD/sssd/issues/3967"""
-
+    with open("/etc/pam.d/pam_cert_service", "w") as f:
+        f.write("auth\trequired\tpam_sss.so require_cert_auth")
     with virt_card.VirtCard(user.USERNAME_LOCAL, insert=True):
         cmd = "sssctl user-checks -a auth -s pam_cert_service " \
               f"{user.USERNAME_LOCAL}"
