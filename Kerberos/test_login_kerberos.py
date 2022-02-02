@@ -2,7 +2,8 @@ import pexpect
 from SCAutolib.src.authselect import Authselect
 from SCAutolib.src.utils import run_cmd
 from SCAutolib.src.virt_card import VirtCard
-from fixtures import user_shell, ipa_user
+from fixtures import user_shell, ipa_user, edit_config, ipa_user_
+import pytest
 
 
 def test_smart_card_gdm_login_enforcing(ipa_user):
@@ -182,3 +183,22 @@ def test_krb_user_su_correct_password(ipa_user, user_shell):
         user_shell.sendline("whoami")
         user_shell.expect_exact(ipa_user.USERNAME)
         user_shell.close()
+
+
+@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
+                         [("/etc/sssd/sssd.conf",
+                           ("domain/sc.test.com", f"certmap/sc.test.com/{ipa_user_().USERNAME}",
+                            f"certmap/sc.test.com/{ipa_user_().USERNAME}"),
+                           ("id_provider", "matchrule", "maprule"),
+                           ("ldap", f"<SUBJECT>.*CN={ipa_user_().USERNAME}.*",
+                            "(userCertificate;binary={cert!bin})"), True,
+                           ["sssd"])])
+def test_krb_user_ldap_mapping(ipa_user, user_shell, edit_config):
+    """Test for LDAP mapping of Kerberos user provided by IPA server"""
+    with Authselect():
+        with VirtCard(ipa_user.USERNAME, insert=True):
+            cmd = f"su {ipa_user.USERNAME} -c 'whoami'"
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"PIN for {ipa_user.USERNAME}:")
+            user_shell.sendline(ipa_user.PIN)
+            user_shell.expect_exact(ipa_user.USERNAME)
