@@ -61,11 +61,11 @@ def edit_config(file_path, section, key, value, restore, restart):
     the pytest.mark.parametrize decorator"""
     destination_path = backup_(file_path)
     if type(section) == str:
-        section = tuple(section)
+        section = [section]
     if type(key) == str:
-        key = tuple(key)
-    if type(value) != tuple:
-        value = tuple(value)
+        key = [key]
+    if type(value) != list:
+        value = [value]
 
     if len(section) != len(key) != len(value):
         raise ValueError(
@@ -73,6 +73,7 @@ def edit_config(file_path, section, key, value, restore, restart):
             f"len(section) = {len(section)}; "
             f"len(key) = {len(key)}; "
             f"len(value) = {len(value)}")
+
     for s, k, v in zip(section, key, value):
         edit_config_(file_path, s, k, v)
 
