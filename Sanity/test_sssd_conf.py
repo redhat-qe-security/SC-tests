@@ -7,34 +7,39 @@ import pytest
 
 
 @pytest.mark.skip
-@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
-                         [("/etc/sssd/sssd.conf", "pam", "p11_uri",
-                           "pkcs11:slot-description=Virtual%20PCD%2000%2000", True,
-                           ["sssd"])])
+@pytest.mark.parametrize("file_path,target,restore,restart",
+                         [("/etc/sssd/sssd.conf",
+                          {"section": "pam",
+                            "key": "p11_uri",
+                            "val": "pkcs11:slot-description=Virtual%20PCD%2000%2000"},
+                           True, ["sssd"])])
 def test_su_login_p11_uri_slot_description(user, edit_config):
     """Test login with PIN to the system with p11_uri specified on specific
     slot in sssd.conf."""
     user.su_login_local_with_sc()
 
 
-@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
-                         [("/etc/sssd/sssd.conf", "pam", "p11_uri",
-                           "pkcs11:slot-description=Virtual%20PCD%2000%2001", True,
-                           ["sssd"])])
+@pytest.mark.parametrize("file_path,target,restore,restart",
+                         [("/etc/sssd/sssd.conf",
+                           {"section": "pam",
+                             "key": "p11_uri",
+                             "val": "pkcs11:slot-description=Virtual%20PCD%2000%2001"},
+                           True, ["sssd"])])
 def test_su_login_p11_uri_wrong_slot_description(user, edit_config):
     """Test login with password to the system with wrong p11_uri with wrong
     slot description in sssd.conf."""
     user.su_login_local_with_passwd()
 
 
-@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
+@pytest.mark.parametrize("file_path,target,restore,restart",
                          [("/etc/sssd/sssd.conf",
-                           f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
-                           "matchrule", "<SUBJECT>.*CN=testuser.*",
+                          {"section": f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
+                            "key": "matchrule",
+                            "val": "<SUBJECT>.*CN=testuser.*"},
                            True, ["sssd"])])
 def test_matchrule_defined_for_other_user(user, edit_config):
     """Test smart card login fail when sssd.conf do not contain
-    [certmap/shadowutils/USER] section for the user from the SC. Instead
+    [certmap/shadowutils/USER] section for the user from the SC. Instead,
     section for other ([certmap/shadowutils/WRONG_USER]) user is present"""
     # change section of sssd.conf to get [certmap/shadowutils/testuser]
     with open("/etc/sssd/sssd.conf", "r") as sources:
@@ -54,9 +59,11 @@ def test_matchrule_defined_for_other_user(user, edit_config):
     user.su_login_local_with_passwd()
 
 
-@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
-                         [("/etc/sssd/sssd.conf", "pam", "p11_uri",
-                           "pkcs11:slot-description=Virtual%20PCD%2000%2000",
+@pytest.mark.parametrize("file_path,target,restore,restart",
+                         [("/etc/sssd/sssd.conf",
+                           {"section": "pam",
+                             "key": "p11_uri",
+                             "val": "pkcs11:slot-description=Virtual%20PCD%2000%2000"},
                            True, ["sssd"])])
 def test_su_login_p11_uri_user_mismatch(user, edit_config):
     """Test smart card login fail when sssd.conf do not contain user from
@@ -72,10 +79,11 @@ def test_su_login_p11_uri_user_mismatch(user, edit_config):
     user.su_login_local_with_passwd()
 
 
-@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
+@pytest.mark.parametrize("file_path,target,restore,restart",
                          [("/etc/sssd/sssd.conf",
-                           f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
-                           "matchrule", "<SUBJECT>.*CN=testuser.*",
+                           {"section": f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
+                             "key": "matchrule",
+                             "val": "<SUBJECT>.*CN=testuser.*"},
                            True, ["sssd"])])
 def test_user_mismatch(user, edit_config):
     """Test smart card login fail when sssd.conf do not contain user from
@@ -85,10 +93,11 @@ def test_user_mismatch(user, edit_config):
     user.su_login_local_with_passwd()
 
 
-@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
+@pytest.mark.parametrize("file_path,target,restore,restart",
                          [("/etc/sssd/sssd.conf",
-                           f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
-                           "matchrule", f"UID={local_user().USERNAME_LOCAL}",
+                           {"section": f"certmap/shadowutils/{local_user().USERNAME_LOCAL}",
+                            "key": "matchrule",
+                            "val": f"UID={local_user().USERNAME_LOCAL}"},
                            True, ["sssd"])])
 def test_wrong_subject_in_matchrule(user, edit_config):
     """Test smart card login fail when sssd.conf contain wrong subject in

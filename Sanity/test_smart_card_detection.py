@@ -15,9 +15,11 @@ def test_modutil_token_info(user, root_shell):
         root_shell.expect_exact(uri)
 
 
-@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
-                         [("/etc/sssd/sssd.conf", "pam",
-                           "pam_p11_allowed_services", "-su", True, ["sssd"])])
+@pytest.mark.parametrize("file_path,target,restore,restart",
+                         [("/etc/sssd/sssd.conf",
+                           ({"section": "pam",
+                             "key": "pam_p11_allowed_services",
+                             "val": "-su"}), True, ["sssd"])])
 def test_pam_services_config(user, root_shell, edit_config):
     """Test for PAM configuration for smart card authentication.
     GitHub issue: https://github.com/SSSD/sssd/issues/3967"""

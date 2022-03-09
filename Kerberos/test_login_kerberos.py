@@ -185,13 +185,17 @@ def test_krb_user_su_correct_password(ipa_user, user_shell):
         user_shell.close()
 
 
-@pytest.mark.parametrize("file_path,section,key,value,restore,restart",
+@pytest.mark.parametrize("file_path,target,restore,restart",
                          [("/etc/sssd/sssd.conf",
-                           ("domain/sc.test.com", f"certmap/sc.test.com/{ipa_user_().USERNAME}",
-                            f"certmap/sc.test.com/{ipa_user_().USERNAME}"),
-                           ("id_provider", "matchrule", "maprule"),
-                           ("ldap", f"<SUBJECT>.*CN={ipa_user_().USERNAME}.*",
-                            "(userCertificate;binary={cert!bin})"), True,
+                           ({"section": "domain/sc.test.com",
+                             "key": "id_provider",
+                             "val": "ldap"},
+                            {"section": f"certmap/sc.test.com/{ipa_user_().USERNAME}",
+                             "key": "matchrule",
+                             "val": f"<SUBJECT>.*CN={ipa_user_().USERNAME}.*"},
+                            {"section": f"certmap/sc.test.com/{ipa_user_().USERNAME}",
+                             "key": "maprule",
+                             "val": "(userCertificate;binary={cert!bin})"}), True,
                            ["sssd"])])
 def test_krb_user_ldap_mapping(ipa_user, user_shell, edit_config):
     """Test for LDAP mapping of Kerberos user provided by IPA server"""

@@ -56,26 +56,15 @@ class IPAUser(User):
 
 
 @pytest.fixture()
-def edit_config(file_path, section, key, value, restore, restart):
+def edit_config(file_path, target, restore, restart):
     """Used for editing given configuration file. Arguments are based through
     the pytest.mark.parametrize decorator"""
     destination_path = backup_(file_path)
-    if type(section) == str:
-        section = [section]
-    if type(key) == str:
-        key = [key]
-    if type(value) != list:
-        value = [value]
+    if type(target) == dict:
+        target = [target]
 
-    if len(section) != len(key) != len(value):
-        raise ValueError(
-            "Length of parameters section, key, value has to be the same. "
-            f"len(section) = {len(section)}; "
-            f"len(key) = {len(key)}; "
-            f"len(value) = {len(value)}")
-
-    for s, k, v in zip(section, key, value):
-        edit_config_(file_path, s, k, v)
+    for t in target:
+        edit_config_(file_path, t["section"], t["key"], t["val"])
 
     for service in restart:
         restart_service(service)
