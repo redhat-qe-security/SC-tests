@@ -1,10 +1,8 @@
 import pytest
-from SCAutolib.src.authselect import Authselect
-from SCAutolib.src.virt_card import VirtCard
-from fixtures import user_indirect, user_shell
+from SCAutolib.models.authselect import Authselect
 
 
-@pytest.mark.parametrize("required", [True, False])
+@pytest.mark.parametrize("required,name", [(True, "local-user"), (False, "local-user")], scope="session")
 def test_change_local_user_passwd(user, user_shell, required):
     """Run 'passwd' command when smartcard login is enforced and after user is
     authenticated in with a smartcard.
@@ -39,9 +37,9 @@ def test_change_local_user_passwd(user, user_shell, required):
         - No mentioning of the smart card
     """
     with Authselect(required=required):
-        with VirtCard(user.USERNAME_LOCAL, insert=True):
-            cmd = f"su {user.USERNAME_LOCAL} -c 'passwd'"
+        with user.card(insert=True):
+            cmd = f"su {user.username} -c 'passwd'"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(f"PIN for {user.USERNAME_LOCAL}:")
-            user_shell.sendline(user.PIN_LOCAL)
-            user_shell.expect_exact(f"Changing password for user {user.USERNAME_LOCAL}.")
+            user_shell.expect_exact(f"PIN for {user.username}:")
+            user_shell.sendline(user.pin)
+            user_shell.expect_exact(f"Changing password for user {user.username}.")
