@@ -3,11 +3,10 @@ do not require any credentials!
 """
 import pytest
 from SCAutolib.models.authselect import Authselect
-from SCAutolib.utils import run_cmd, check_output
 
 
 @pytest.mark.parametrize("name", ["local-user"], scope="session")
-def test_su_login_with_sc(user):
+def test_su_login_with_sc(user, user_shell):
     """Basic su login to the user with a smart card.
 
     Setup
@@ -42,15 +41,16 @@ def test_su_login_with_sc(user):
     """
 
     with Authselect(required=False):
-        with user.card:
-            cmd = f'su - {user.username} -c "su - {user.username}"'
-            output = run_cmd(cmd, passwd=user.pin, pin=True)
-            check_output(output, expect=["su: Authentication failure"],
-                         zero_rc=False, check_rc=True)
+        with user.card(insert=True):
+            cmd = f'su {user.username} -c "whoami"'
+            user_shell.sendline(cmd)
+            user_shell.expect(f"PIN for {user.username}:")
+            user_shell.sendline(user.pin)
+            user_shell.expect(user.username)
 
 
 @pytest.mark.parametrize("name", ["local-user"], scope="session")
-def test_su_login_with_sc_wrong(user):
+def test_su_login_with_sc_wrong(user, user_shell):
     """Basic su login to the user with a smartcard when user inters wrong PIN.
 
     Setup
@@ -84,15 +84,16 @@ def test_su_login_with_sc_wrong(user):
         - User is not logged in and error message is written to the console
     """
     with Authselect(required=False):
-        with user.card:
-            cmd = f'su - {user.username} -c "su - {user.username}"'
-            output = run_cmd(cmd, passwd=user.password, pin=True)
-            check_output(output, expect=["su: Authentication failure"],
-                         zero_rc=False, check_rc=True)
+        with user.card(insert=True):
+            cmd = f'su {user.username} -c "whoami"'
+            user_shell.sendline(cmd)
+            user_shell.expect(f"PIN for {user.username}:")
+            user_shell.sendline("wrong")
+            user_shell.expect(f"su: Authentication failure")
 
 
 @pytest.mark.parametrize("name", ["local-user"], scope="session")
-def test_gdm_login_sc_required(user):
+def test_gdm_login_sc_required(user, root_shell):
     """GDM login to the user when smart card is required. Point is to check
     that GDM prompts to insert the smart card if it is not inserted
 
@@ -130,12 +131,13 @@ def test_gdm_login_sc_required(user):
     with Authselect(required=True):
         with user.card as sc:
             cmd = f'sssctl user-checks -s gdm-smartcard {user.username} -a auth'
-            shell = run_cmd(cmd, return_val="shell")
-            shell.expect("Please insert smart card")
+            root_shell.sendline(cmd)
+            root_shell.expect("Please insert smart card")
             sc.insert()
-            shell.expect(f"PIN for {user.username}")
-            shell.sendline(user.pin)
-            check_output(shell.read(), expect=["pam_authenticate.*Success"])
+            root_shell.expect(f"PIN for {user.username}")
+            root_shell.sendline(user.pin)
+            root_shell.expect("pam_authenticate.*Success")
+
 #
 #
 # def test_su_login_without_sc(user):
