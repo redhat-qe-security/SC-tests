@@ -1,1 +1,2 @@
-pytest
+pytest>=7.0
+pexpect>=4.8
