@@ -1,8 +1,12 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
+from time import sleep
+
+from subprocess import check_output
+
 import pytest
 from SCAutolib.models.file import SSSDConf
 from SCAutolib.models.authselect import Authselect
-from SCAutolib.utils import run_cmd, check_output
+from SCAutolib.utils import user_factory
 
 
 @pytest.fixture()
@@ -10,32 +14,29 @@ def sssd():
     return SSSDConf()
 
 
-@pytest.mark.parametrize("name", ["local-user"], scope="session")
-def test_su_login_p11_uri_slot_description(user, sssd, user_shell):
+@pytest.mark.parametrize("user,uri", [(user_factory("local-user"), "pkcs11:pkcs11:slot-description=Virtual%%20PCD%%2000%%2000"),
+                                      (user_factory("local-user"), "wrong-uri")],
+                         scope="session")
+def test_su_login_p11_uri_slot_description(user, uri, sssd, user_shell):
     """Test login with PIN to the system with p11_uri specified on specific
-    slot in sssd.conf."""
+    slot in sssd.conf.
+
+    Expected result:
+        - when correct uri is set, user is prompted to insert the PIN
+        - when incorrect uri is set, user is not prompted to insert the password
+    """
     with sssd(section="pam", key="p11_uri",
-              value="pkcs11:pkcs11:slot-description=Virtual%20PCD%2000%2000"):
-        with Authselect(required=False), user.card:
-            cmd = f"su - {user.username} -c whoami"
+              value=uri):
+        with Authselect(required=False), user.card(insert=True):
+            cmd = f"su {user.username} -c whoami"
             user_shell.sendline(cmd)
-            user_shell.expect(f"PIN for {user.username}")
-            user_shell.sendline(user.pin)
+            if uri == "wrong-uri":
+                user_shell.expect_exact("Password:")
+                user_shell.sendline(user.password)
+            else:
+                user_shell.expect(f"PIN for {user.username}")
+                user_shell.sendline(user.pin)
             user_shell.expect(user.username)
-
-
-@pytest.mark.parametrize("name", ["local-user"], scope="session")
-def test_su_login_p11_uri_wrong_slot_description(user, sssd):
-    """Test login with password to the system with wrong p11_uri with wrong
-    slot description in sssd.conf."""
-    with sssd(section="pam", key="p11_uri",
-              value="pkcs11:slot-description=Virtual%%20PCD%%2000%%2001"):
-        with Authselect(required=False), user.card:
-            cmd = f'su - {user.username} -c ' \
-                  f'"su - {user.username} -c whoami"'
-            output = run_cmd(cmd, passwd=user.password, pin=False)
-            check_output(output, expect=user.username,
-                         zero_rc=True, check_rc=True)
 
 
 # @pytest.mark.parametrize("file_path,target,restore,restart",

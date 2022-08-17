@@ -45,9 +45,9 @@ def test_su_login_with_sc(user, user_shell):
         with user.card(insert=True):
             cmd = f'su {user.username} -c "whoami"'
             user_shell.sendline(cmd)
-            user_shell.expect(f"PIN for {user.username}:")
+            user_shell.expect_exact(f"PIN for {user.username}:")
             user_shell.sendline(user.pin)
-            user_shell.expect(user.username)
+            user_shell.expect_exact(user.username)
 
 
 @pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
@@ -88,7 +88,7 @@ def test_su_login_with_sc_wrong(user, user_shell):
         with user.card(insert=True):
             cmd = f'su {user.username} -c "whoami"'
             user_shell.sendline(cmd)
-            user_shell.expect(f"PIN for {user.username}:")
+            user_shell.expect_exact(f"PIN for {user.username}:")
             user_shell.sendline("wrong")
             user_shell.expect(f"su: Authentication failure")
 
@@ -133,48 +133,50 @@ def test_gdm_login_sc_required(user, root_shell):
         with user.card as sc:
             cmd = f'sssctl user-checks -s gdm-smartcard {user.username} -a auth'
             root_shell.sendline(cmd)
-            root_shell.expect("Please insert smart card")
+            root_shell.expect_exact("Please insert smart card")
             sc.insert()
-            root_shell.expect(f"PIN for {user.username}")
+            root_shell.expect_exact(f"PIN for {user.username}")
             root_shell.sendline(user.pin)
             root_shell.expect("pam_authenticate.*Success")
 
-#
-#
-# def test_su_login_without_sc(user):
-#     """SU login with user password, smartcard is not required.
-#
-#     Setup
-#         1. Update /etc/sssd/sssd.conf so it contains following fields
-#             [sssd]
-#             debug_level = 9
-#             services = nss, pam,
-#             domains = shadowutils
-#             certificate_verification = no_ocsp
-#
-#             [pam]
-#             debug_level = 9
-#             pam_cert_auth = True
-#
-#             [domain/shadowutils]
-#             debug_level = 9
-#             id_provider = files
-#
-#             [certmap/shadowutils/username]
-#             matchrule = <SUBJECT>.*CN=username.*
-#         2. Setup authselect: authselect select sssd with-smartcard
-#         4. Try to switch user (su login) to the smartcard user
-#
-#
-#     Expected result
-#         - Users is asked insert the password
-#         - User inserts correct password
-#         - User is successfully logged in
-#     """
-#     with Authselect():
-#         cmd = f'su - {user.USERNAME_LOCAL} -c "su - {user.USERNAME_LOCAL} -c whoami"'
-#         output = run_cmd(cmd, pin=False, passwd=user.PASSWD_LOCAL)
-#         check_output(output, expect=[user.USERNAME_LOCAL])
+
+@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
+def test_su_login_without_sc(user, user_shell):
+    """SU login with user password, smartcard is not required.
+
+    Setup
+        1. Update /etc/sssd/sssd.conf so it contains following fields
+            [sssd]
+            debug_level = 9
+            services = nss, pam,
+            domains = shadowutils
+            certificate_verification = no_ocsp
+
+            [pam]
+            debug_level = 9
+            pam_cert_auth = True
+
+            [domain/shadowutils]
+            debug_level = 9
+            id_provider = files
+
+            [certmap/shadowutils/username]
+            matchrule = <SUBJECT>.*CN=username.*
+        2. Setup authselect: authselect select sssd with-smartcard
+        4. Try to switch user (su login) to the smartcard user
+
+
+    Expected result
+        - Users is asked insert the password
+        - User inserts correct password
+        - User is successfully logged in
+    """
+    with Authselect():
+        cmd = f"su - {user.username} -c whoami"
+        user_shell.sendline(cmd)
+        user_shell.expect_exact(f"Password:")
+        user_shell.sendline(user.password)
+        user_shell.expect_exact(user.username)
 #
 #
 # def test_su_to_root(user, user_shell):
