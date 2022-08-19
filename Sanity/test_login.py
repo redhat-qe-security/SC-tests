@@ -177,49 +177,50 @@ def test_su_login_without_sc(user, user_shell):
         user_shell.expect_exact(f"Password:")
         user_shell.sendline(user.password)
         user_shell.expect_exact(user.username)
-#
-#
-# def test_su_to_root(user, user_shell):
-#     """Test for smartcard login to the local user and then switching to root (su -).
-#
-#     Setup
-#         1. Create local CA
-#         2. Create virtual smart card with certs signed by created CA
-#         3. Update /etc/sssd/sssd.conf so it contains following fields
-#             [sssd]
-#             debug_level = 9
-#             services = nss, pam,
-#             domains = shadowutils
-#             certificate_verification = no_ocsp
-#
-#             [pam]
-#             debug_level = 9
-#             pam_cert_auth = True
-#
-#             [domain/shadowutils]
-#             debug_level = 9
-#             id_provider = files
-#
-#             [certmap/shadowutils/username]
-#             matchrule = <SUBJECT>.*CN=username.*
-#         4. Setup authselect: authselect select sssd with-smartcard
-#         5. Insert the card
-#         6. Switch user with 'su' command to the smartcard user
-#         7. User is asked for smartcard PIN -> insert correct PIN
-#         8. After successful login, try to switch to root user with 'su -'
-#
-#     Expected result
-#         - Users is asked for root password
-#         - User insert correct root password
-#         - User is switched to the root user
-#     """
-#     with Authselect():
-#         with VirtCard(user.USERNAME_LOCAL, insert=True) as sc:
-#             user_shell.sendline(f"su - {user.USERNAME_LOCAL}")
-#             user_shell.expect(f"PIN for {user.USERNAME_LOCAL}:")
-#             user_shell.sendline(user.PIN_LOCAL)
-#             user_shell.sendline("whoami")
-#             user_shell.expect(user.USERNAME_LOCAL)
-#             user_shell.sendline('su - root -c "whoami"')
-#             user_shell.sendline(user.ROOT_PASSWD)
-#             user_shell.expect("root")
+
+
+@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
+def test_su_to_root(user, user_shell, root_user):
+    """Test for smartcard login to the local user and then switching to root (su -).
+
+    Setup
+        1. Create local CA
+        2. Create virtual smart card with certs signed by created CA
+        3. Update /etc/sssd/sssd.conf so it contains following fields
+            [sssd]
+            debug_level = 9
+            services = nss, pam,
+            domains = shadowutils
+            certificate_verification = no_ocsp
+
+            [pam]
+            debug_level = 9
+            pam_cert_auth = True
+
+            [domain/shadowutils]
+            debug_level = 9
+            id_provider = files
+
+            [certmap/shadowutils/username]
+            matchrule = <SUBJECT>.*CN=username.*
+        4. Setup authselect: authselect select sssd with-smartcard
+        5. Insert the card
+        6. Switch user with 'su' command to the smartcard user
+        7. User is asked for smartcard PIN -> insert correct PIN
+        8. After successful login, try to switch to root user with 'su -'
+
+    Expected result
+        - Users is asked for root password
+        - User insert correct root password
+        - User is switched to the root user
+    """
+    with Authselect():
+        with user.card(insert=True) as sc:
+            user_shell.sendline(f"su - {user.username}")
+            user_shell.expect_exact(f"PIN for {user.username}:")
+            user_shell.sendline(user.pin)
+            user_shell.sendline("whoami")
+            user_shell.expect_exact(user.username)
+            user_shell.sendline('su - root -c "whoami"')
+            user_shell.sendline(root_user.password)
+            user_shell.expect_exact("root")

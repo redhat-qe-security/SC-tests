@@ -1,6 +1,7 @@
 import pexpect
 import pytest
 import sys
+from SCAutolib.utils import user_factory
 
 
 @pytest.fixture(scope="function")
@@ -17,3 +18,8 @@ def root_shell():
     shell = pexpect.spawn("/usr/bin/sh -c 'su'", encoding="utf-8")
     shell.logfile = sys.stdout
     return shell
+
+
+@pytest.fixture(scope="session")
+def root_user():
+    return user_factory("root")
