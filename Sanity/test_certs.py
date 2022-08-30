@@ -1,16 +1,18 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
 from os import remove
+from pathlib import Path
+
 from subprocess import run
 
-from SCAutolib.src import utils
-from SCAutolib.src.env import run
 from fixtures import *
-from SCAutolib.src.exceptions import PatternNotFound
+from SCAutolib.models.authselect import Authselect
+from SCAutolib.models.file import File, OpensslCnf
+from SCAutolib.utils import local_ca_factory, user_factory
 
 
-@pytest.mark.parametrize("file_path,restore,restart",
-                         [("/etc/sssd/pki/sssd_auth_ca_db.pem", True, ["sssd"])])
-def test_wrong_issuer_cert(user, backup):
+@pytest.mark.parametrize("user,sssd_db", [
+    (user_factory("local-user"), File("/etc/sssd/pki/sssd_auth_ca_db.pem"))])
+def test_wrong_issuer_cert(user, sssd_db, user_shell, tmp_path):
     """Test failed smart card login when root certificate stored in the
      /etc/sssd/pki/sssd_auth_ca_db.pem file has different
     issuer then certificate on the smart card.
@@ -30,17 +32,18 @@ def test_wrong_issuer_cert(user, backup):
         - User can login with a password
     """
 
-    new_cert, new_key = utils.generate_cert()
-
-    with open("/etc/sssd/pki/sssd_auth_ca_db.pem", "w") as f:
-        with open(new_cert, "r") as f_new:
-            f.write(f_new.read())
-
+    sssd_db.backup()
+    sssd_db.path.unlink()
+    local_ca_factory(tmp_path.joinpath("ca"))
     run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
 
-    with pytest.raises(PatternNotFound):
-        user.su_login_local_with_sc()
-    user.su_login_local_with_passwd()
+    with Authselect():
+        with user.card(insert=True):
+            cmd = f'su {user.username} -c "whoami"'
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"Password:")
+            user_shell.sendline(user.password)
+            user_shell.expect_exact(user.username)
 
-    remove(new_cert)
-    remove(new_key)
+    sssd_db.restore()
+    run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])

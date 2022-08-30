@@ -1,11 +1,13 @@
-from fixtures import *
-
 """Note: as all tests are executed from root user, first login to any user
 do not require any credentials!
 """
+import pytest
+from SCAutolib.models.authselect import Authselect
+from SCAutolib.utils import user_factory
 
 
-def test_su_login_with_sc(user):
+@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
+def test_su_login_with_sc(user, user_shell):
     """Basic su login to the user with a smart card.
 
     Setup
@@ -39,10 +41,17 @@ def test_su_login_with_sc(user):
         - User is successfully logged in
     """
 
-    user.su_login_local_with_sc()
+    with Authselect(required=False):
+        with user.card(insert=True):
+            cmd = f'su {user.username} -c "whoami"'
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"PIN for {user.username}:")
+            user_shell.sendline(user.pin)
+            user_shell.expect_exact(user.username)
 
 
-def test_su_login_with_sc_wrong(user):
+@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
+def test_su_login_with_sc_wrong(user, user_shell):
     """Basic su login to the user with a smartcard when user inters wrong PIN.
 
     Setup
@@ -76,14 +85,16 @@ def test_su_login_with_sc_wrong(user):
         - User is not logged in and error message is written to the console
     """
     with Authselect(required=False):
-        with VirtCard(user.USERNAME_LOCAL, insert=True):
-            cmd = f'su - {user.USERNAME_LOCAL} -c "su - {user.USERNAME_LOCAL}"'
-            output = run_cmd(cmd, passwd="1264325", pin=True)
-            check_output(output, expect=["su: Authentication failure"],
-                         zero_rc=False, check_rc=True)
+        with user.card(insert=True):
+            cmd = f'su {user.username} -c "whoami"'
+            user_shell.sendline(cmd)
+            user_shell.expect_exact(f"PIN for {user.username}:")
+            user_shell.sendline("wrong")
+            user_shell.expect(f"su: Authentication failure")
 
 
-def test_gdm_login_sc_required(user):
+@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
+def test_gdm_login_sc_required(user, root_shell):
     """GDM login to the user when smart card is required. Point is to check
     that GDM prompts to insert the smart card if it is not inserted
 
@@ -115,21 +126,22 @@ def test_gdm_login_sc_required(user):
         - User inserts the card
         - User is asked to insert the PIN
         - User inserts correct PIN
-        - Authentication is succeed
+        - Authentication is succeeded
 
     """
     with Authselect(required=True):
-        with VirtCard(user.USERNAME_LOCAL) as sc:
-            cmd = f'sssctl user-checks -s gdm-smartcard {user.USERNAME_LOCAL} -a auth'
-            shell = run_cmd(cmd, return_val="shell")
-            shell.expect("Please insert smart card")
+        with user.card as sc:
+            cmd = f'sssctl user-checks -s gdm-smartcard {user.username} -a auth'
+            root_shell.sendline(cmd)
+            root_shell.expect_exact("Please insert smart card")
             sc.insert()
-            shell.expect(f"PIN for {user.USERNAME_LOCAL}")
-            shell.sendline(user.PIN_LOCAL)
-            check_output(shell.read(), expect=["pam_authenticate.*Success"])
+            root_shell.expect_exact(f"PIN for {user.username}")
+            root_shell.sendline(user.pin)
+            root_shell.expect("pam_authenticate.*Success")
 
 
-def test_su_login_without_sc(user):
+@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
+def test_su_login_without_sc(user, user_shell):
     """SU login with user password, smartcard is not required.
 
     Setup
@@ -160,12 +172,15 @@ def test_su_login_without_sc(user):
         - User is successfully logged in
     """
     with Authselect():
-        cmd = f'su - {user.USERNAME_LOCAL} -c "su - {user.USERNAME_LOCAL} -c whoami"'
-        output = run_cmd(cmd, pin=False, passwd=user.PASSWD_LOCAL)
-        check_output(output, expect=[user.USERNAME_LOCAL])
+        cmd = f"su - {user.username} -c whoami"
+        user_shell.sendline(cmd)
+        user_shell.expect_exact(f"Password:")
+        user_shell.sendline(user.password)
+        user_shell.expect_exact(user.username)
 
 
-def test_su_to_root(user, user_shell):
+@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
+def test_su_to_root(user, user_shell, root_user):
     """Test for smartcard login to the local user and then switching to root (su -).
 
     Setup
@@ -200,12 +215,12 @@ def test_su_to_root(user, user_shell):
         - User is switched to the root user
     """
     with Authselect():
-        with VirtCard(user.USERNAME_LOCAL, insert=True) as sc:
-            user_shell.sendline(f"su - {user.USERNAME_LOCAL}")
-            user_shell.expect(f"PIN for {user.USERNAME_LOCAL}:")
-            user_shell.sendline(user.PIN_LOCAL)
+        with user.card(insert=True) as sc:
+            user_shell.sendline(f"su - {user.username}")
+            user_shell.expect_exact(f"PIN for {user.username}:")
+            user_shell.sendline(user.pin)
             user_shell.sendline("whoami")
-            user_shell.expect(user.USERNAME_LOCAL)
+            user_shell.expect_exact(user.username)
             user_shell.sendline('su - root -c "whoami"')
-            user_shell.sendline(user.ROOT_PASSWD)
-            user_shell.expect("root")
+            user_shell.sendline(root_user.password)
+            user_shell.expect_exact("root")

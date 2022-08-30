@@ -7,18 +7,26 @@ service that executes getty command to get TTY and executes login command in
 that TTY. Therefore, execution of login command in nearly the same way agetty
 does it is good approximation to manual testing in virtual console.
 """
+import sys
 
-from fixtures import *
+import pexpect
+import pytest
+from SCAutolib.models.authselect import Authselect
+from SCAutolib.utils import user_factory, ipa_factory
 
 
-def provide_login_shell(username):
+def login_shell_factory(username):
     """Returns login shell for username."""
-    login_shell = pexpect.spawn(f"login {username}",
-                                ignore_sighup=True, encoding="utf-8")
-    login_shell.logfile = sys.stdout
-    return login_shell
+    shell = pexpect.spawn(f"login {username}",
+                          ignore_sighup=True, encoding="utf-8")
+    shell.logfile = sys.stdout
+    return shell
 
 
+@pytest.mark.parametrize("user", [user_factory("local-user"),
+                                  user_factory("rhel-86-regression",
+                                               ipa_server=ipa_factory())],
+                         scope="session")
 def test_login_with_sc(user):
     """Console-like login to the user with a smart card.
     Setup
@@ -47,14 +55,18 @@ def test_login_with_sc(user):
         - User is successfully logged in
     """
     with Authselect():
-        with VirtCard(user.USERNAME_LOCAL, insert=True):
-            login_shell = provide_login_shell(user.USERNAME_LOCAL)
-            login_shell.expect(f"PIN for {user.USERNAME_LOCAL}:")
-            login_shell.sendline(user.PIN_LOCAL)
-            login_shell.expect(user.USERNAME_LOCAL)
+        with user.card(insert=True):
+            login_shell = login_shell_factory(user.username)
+            login_shell.expect(f"PIN for {user.username}:")
+            login_shell.sendline(user.pin)
+            login_shell.expect(user.username)
             login_shell.sendline("exit")
 
 
+@pytest.mark.parametrize("user", [user_factory("local-user"),
+                                  user_factory("rhel-86-regression",
+                                               ipa_server=ipa_factory())],
+                         scope="session")
 def test_login_without_sc(user):
     """Console-like login to the user without a smart card.
     Setup
@@ -82,14 +94,16 @@ def test_login_without_sc(user):
         - User is successfully logged in
     """
     with Authselect():
-        with VirtCard(user.USERNAME_LOCAL, insert=False):
-            login_shell = provide_login_shell(user.USERNAME_LOCAL)
-            login_shell.logfile = sys.stdout
-            login_shell.expect(f"Password:")
-            login_shell.sendline(user.PASSWD_LOCAL)
-            login_shell.expect(user.USERNAME_LOCAL)
+        login_shell = login_shell_factory(user.username)
+        login_shell.expect(f"Password:")
+        login_shell.sendline(user.password)
+        login_shell.expect(user.username)
 
 
+@pytest.mark.parametrize("user", [user_factory("local-user"),
+                                  user_factory("rhel-86-regression",
+                                               ipa_server=ipa_factory())],
+                         scope="session")
 def test_login_with_sc_required(user):
     """Console-like login to the user with a smart card; smartcard required.
     Setup
@@ -119,10 +133,9 @@ def test_login_with_sc_required(user):
         - User is successfully logged in
     """
     with Authselect(required=True):
-        with VirtCard(user.USERNAME_LOCAL, insert=True):
-            login_shell = provide_login_shell(user.USERNAME_LOCAL)
-            login_shell.logfile = sys.stdout
-            login_shell.expect(f"PIN for {user.USERNAME_LOCAL}:")
-            login_shell.sendline(user.PIN_LOCAL)
-            login_shell.expect(user.USERNAME_LOCAL)
+        with user.card(insert=True):
+            login_shell = login_shell_factory(user.username)
+            login_shell.expect(f"PIN for {user.username}:")
+            login_shell.sendline(user.pin)
+            login_shell.expect(user.username)
             login_shell.sendline("exit")
