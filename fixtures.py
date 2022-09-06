@@ -1,6 +1,8 @@
 import pexpect
 import pytest
 import sys
+
+from SCAutolib.models.file import SSSDConf
 from SCAutolib.utils import user_factory
 
 
@@ -23,3 +25,8 @@ def root_shell():
 @pytest.fixture(scope="session")
 def root_user():
     return user_factory("root")
+
+
+@pytest.fixture()
+def sssd():
+    return SSSDConf()
