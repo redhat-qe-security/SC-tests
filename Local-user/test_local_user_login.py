@@ -1,12 +1,9 @@
 """Note: as all tests are executed from root user, first login to any user
 do not require any credentials!
 """
-import pytest
 from SCAutolib.models.authselect import Authselect
-from SCAutolib.utils import user_factory
 
 
-@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
 def test_su_login_with_sc(user, user_shell):
     """Basic su login to the user with a smart card.
 
@@ -50,7 +47,6 @@ def test_su_login_with_sc(user, user_shell):
             user_shell.expect_exact(user.username)
 
 
-@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
 def test_su_login_with_sc_wrong(user, user_shell):
     """Basic su login to the user with a smartcard when user inters wrong PIN.
 
@@ -93,7 +89,6 @@ def test_su_login_with_sc_wrong(user, user_shell):
             user_shell.expect(f"su: Authentication failure")
 
 
-@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
 def test_gdm_login_sc_required(user, root_shell):
     """GDM login to the user when smart card is required. Point is to check
     that GDM prompts to insert the smart card if it is not inserted
@@ -140,7 +135,6 @@ def test_gdm_login_sc_required(user, root_shell):
             root_shell.expect("pam_authenticate.*Success")
 
 
-@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
 def test_su_login_without_sc(user, user_shell):
     """SU login with user password, smartcard is not required.
 
@@ -179,7 +173,6 @@ def test_su_login_without_sc(user, user_shell):
         user_shell.expect_exact(user.username)
 
 
-@pytest.mark.parametrize("user", [user_factory("local-user")], scope="session")
 def test_su_to_root(user, user_shell, root_user):
     """Test for smartcard login to the local user and then switching to root (su -).
 
