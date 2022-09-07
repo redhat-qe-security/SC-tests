@@ -3,15 +3,9 @@ import pytest
 
 from SCAutolib import run
 from SCAutolib.models.authselect import Authselect
-from SCAutolib.utils import user_factory, ipa_factory
-
-ipa_username = "rhel-86-regression"
-ipa_server = ipa_factory()
-ipa_user = user_factory(ipa_username, ipa_server=ipa_server)
 
 
-@pytest.mark.parametrize("user", [ipa_user], scope="session")
-def test_smart_card_gdm_login_enforcing(user, root_shell):
+def test_smart_card_gdm_login_enforcing(ipa_user, root_shell):
     """Test kerberos user tries to login to the GDM with smart card. Smart
     card is enforced.
 
@@ -28,18 +22,17 @@ def test_smart_card_gdm_login_enforcing(user, root_shell):
         - Authentication is succeed.
     """
     with Authselect(lock_on_removal=True, mk_homedir=True, required=True):
-        with user.card(insert=False) as sc:
-            cmd = f"sssctl user-checks -s gdm-smartcard {user.username} -a auth"
+        with ipa_user.card(insert=False) as sc:
+            cmd = f"sssctl user-checks -s gdm-smartcard {ipa_user.username} -a auth"
             root_shell.sendline(cmd)
             root_shell.expect(r"Please (insert|enter) smart card", timeout=10)
             sc.insert()
-            root_shell.expect(f"PIN for {user.username}:")
-            root_shell.sendline(user.pin)
-            root_shell.expect(rf"pam_authenticate for user \[{user.username}\]: Success")
+            root_shell.expect(f"PIN for {ipa_user.username}:")
+            root_shell.sendline(ipa_user.pin)
+            root_shell.expect(rf"pam_authenticate for user \[{ipa_user.username}\]: Success")
 
 
-@pytest.mark.parametrize("user", [ipa_user], scope="session")
-def test_kerberos_login_to_root(user, user_shell, root_user):
+def test_kerberos_login_to_root(ipa_user, user_shell, root_user):
     """Kerberos user tries to switch to the root user with root password after
     kerberos user is logged in with smart card. Smart card is required.
 
@@ -58,18 +51,17 @@ def test_kerberos_login_to_root(user, user_shell, root_user):
         - User is switched to the root user
     """
     with Authselect(required=True):
-        with user.card(insert=True):
-            user_shell.sendline(f"su - {user.username}")
-            user_shell.expect(f"PIN for {user.username}", timeout=10)
-            user_shell.sendline(user.pin)
+        with ipa_user.card(insert=True):
+            user_shell.sendline(f"su - {ipa_user.username}")
+            user_shell.expect(f"PIN for {ipa_user.username}", timeout=10)
+            user_shell.sendline(ipa_user.pin)
             user_shell.sendline("su - -c 'whoami'")
             user_shell.expect("Password")
             user_shell.sendline(root_user.password)
             user_shell.expect("root")
 
 
-@pytest.mark.parametrize("user", [ipa_user], scope="session")
-def test_krb_user_su_to_root_wrong_passwd_sc_required_no_sc(user, user_shell):
+def test_krb_user_su_to_root_wrong_passwd_sc_required_no_sc(ipa_user, user_shell):
     """Kerberos user tries to switch to the root user with root password after
        kerberos user is logged in with smart card. Smart card is required.
 
@@ -89,14 +81,14 @@ def test_krb_user_su_to_root_wrong_passwd_sc_required_no_sc(user, user_shell):
               written to the output
        """
     with Authselect(required=True):
-        with user.card(insert=True) as sc:
-            cmd = f"su - {user.username}"
+        with ipa_user.card(insert=True) as sc:
+            cmd = f"su - {ipa_user.username}"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(f"PIN for {user.username}:")
-            user_shell.sendline(user.pin)
+            user_shell.expect_exact(f"PIN for {ipa_user.username}:")
+            user_shell.sendline(ipa_user.pin)
             cmd = "whoami"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(user.username)
+            user_shell.expect_exact(ipa_user.username)
             sc.remove()
 
             cmd = "su -"
@@ -106,8 +98,7 @@ def test_krb_user_su_to_root_wrong_passwd_sc_required_no_sc(user, user_shell):
             user_shell.expect_exact("su: Authentication failure")
 
 
-@pytest.mark.parametrize("user", [ipa_user], scope="session")
-def test_kerberos_user_sudo_wrong_password(user, user_shell):
+def test_kerberos_user_sudo_wrong_password(ipa_user, user_shell):
     """Kerberos user tries to use sudo to access some application and mistype
     the password. Smartcard is required and used for user login and removed
     after login.
@@ -128,50 +119,48 @@ def test_kerberos_user_sudo_wrong_password(user, user_shell):
     """
 
     with Authselect(required=True):
-        with user.card(insert=True) as sc:
-            cmd = f"su - {user.username} -c 'sudo -S ls /'"
+        with ipa_user.card(insert=True) as sc:
+            cmd = f"su - {ipa_user.username} -c 'sudo -S ls /'"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(f"PIN for {user.username}:")
-            user_shell.sendline(user.pin)
+            user_shell.expect_exact(f"PIN for {ipa_user.username}:")
+            user_shell.sendline(ipa_user.pin)
 
             cmd = "whoami"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(user.username)
+            user_shell.expect_exact(ipa_user.username)
 
             sc.remove()
 
             cmd = "sudo -S ls /"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(f"[sudo] password for {user.username}:")
+            user_shell.expect_exact(f"[sudo] password for {ipa_user.username}:")
             user_shell.sendline("098765432")
             user_shell.expect("Sorry, try again.")
 
 
-@pytest.mark.parametrize("user", [ipa_user], scope="session")
-def test_krb_user_sudo_correct_password_sc_required_no_sc(user, user_shell):
+def test_krb_user_sudo_correct_password_sc_required_no_sc(ipa_user, user_shell):
     with Authselect(required=True, sudo=True):
-        with user.card(insert=True) as sc:
+        with ipa_user.card(insert=True) as sc:
             output = pexpect.run("ls /", encoding="utf-8")
-            cmd = f"su - {user.username}"
+            cmd = f"su - {ipa_user.username}"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(f"PIN for {user.username}:")
-            user_shell.sendline(user.pin)
+            user_shell.expect_exact(f"PIN for {ipa_user.username}:")
+            user_shell.sendline(ipa_user.pin)
 
             cmd = "whoami"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(user.username)
+            user_shell.expect_exact(ipa_user.username)
 
             sc.remove()
 
             cmd = "sudo -S ls /"
             user_shell.sendline(cmd)
-            user_shell.expect(rf"\[sudo\] password for {user.username}:")
-            user_shell.sendline(user.password)
+            user_shell.expect(rf"\[sudo\] password for {ipa_user.username}:")
+            user_shell.sendline(ipa_user.password)
             user_shell.expect(output)
 
 
-@pytest.mark.parametrize("user", [ipa_user], scope="session")
-def test_krb_user_su_correct_password(user, user_shell):
+def test_krb_user_su_correct_password(ipa_user, user_shell):
     """Kerberos' user login with command su using correct password.
 
     Setup:
@@ -185,25 +174,24 @@ def test_krb_user_su_correct_password(user, user_shell):
         - after inserting the password, user is successfully authenticated
     """
     with Authselect():
-        cmd = f"su {user.username}"
+        cmd = f"su {ipa_user.username}"
         user_shell.sendline(cmd)
         user_shell.expect_exact("Password:")
-        user_shell.sendline(user.password)
+        user_shell.sendline(ipa_user.password)
         user_shell.sendline("whoami")
-        user_shell.expect_exact(user.username)
+        user_shell.expect_exact(ipa_user.username)
         user_shell.close()
 
 
-@pytest.mark.parametrize("user", [ipa_user], scope="session")
-def test_krb_user_ldap_mapping(user, user_shell, sssd):
+def test_krb_user_ldap_mapping(ipa_user, user_shell, sssd):
     """Test for LDAP mapping of Kerberos user provided by IPA server"""
-    changes = ({"section": f"domain/{ipa_server.domain}",
+    changes = ({"section": f"domain/{pytest.ipa_server.domain}",
                 "key": "id_provider",
                 "val": "ldap"},
-               {"section": f"certmap/{ipa_server.domain}/{user.username}",
+               {"section": f"certmap/{pytest.ipa_server.domain}/{ipa_user.username}",
                 "key": "matchrule",
-                "val": f"<SUBJECT>.*CN={user.username}.*"},
-               {"section": f"certmap/{ipa_server.domain}/{user.username}",
+                "val": f"<SUBJECT>.*CN={ipa_user.username}.*"},
+               {"section": f"certmap/{pytest.ipa_server.domain}/{ipa_user.username}",
                 "key": "maprule",
                 "val": "(userCertificate;binary={cert!bin})"})
     with sssd as conf:
@@ -215,9 +203,9 @@ def test_krb_user_ldap_mapping(user, user_shell, sssd):
 
         run(["systemctl", "restart", "sssd"], sleep=5)
 
-        with Authselect(), user.card(insert=True):
-            cmd = f"su {user.username} -c 'whoami'"
+        with Authselect(), ipa_user.card(insert=True):
+            cmd = f"su {ipa_user.username} -c 'whoami'"
             user_shell.sendline(cmd)
-            user_shell.expect_exact(f"PIN for {user.username}:")
-            user_shell.sendline(user.pin)
-            user_shell.expect_exact(user.username)
+            user_shell.expect_exact(f"PIN for {ipa_user.username}:")
+            user_shell.sendline(ipa_user.pin)
+            user_shell.expect_exact(ipa_user.username)
