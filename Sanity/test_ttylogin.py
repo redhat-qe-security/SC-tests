@@ -10,9 +10,8 @@ does it is good approximation to manual testing in virtual console.
 import sys
 
 import pexpect
-import pytest
+
 from SCAutolib.models.authselect import Authselect
-from SCAutolib.utils import user_factory, ipa_factory
 
 
 def login_shell_factory(username):
@@ -23,10 +22,6 @@ def login_shell_factory(username):
     return shell
 
 
-@pytest.mark.parametrize("user", [user_factory("local-user"),
-                                  user_factory("rhel-86-regression",
-                                               ipa_server=ipa_factory())],
-                         scope="session")
 def test_login_with_sc(user):
     """Console-like login to the user with a smart card.
     Setup
@@ -63,10 +58,6 @@ def test_login_with_sc(user):
             login_shell.sendline("exit")
 
 
-@pytest.mark.parametrize("user", [user_factory("local-user"),
-                                  user_factory("rhel-86-regression",
-                                               ipa_server=ipa_factory())],
-                         scope="session")
 def test_login_without_sc(user):
     """Console-like login to the user without a smart card.
     Setup
@@ -100,10 +91,6 @@ def test_login_without_sc(user):
         login_shell.expect(user.username)
 
 
-@pytest.mark.parametrize("user", [user_factory("local-user"),
-                                  user_factory("rhel-86-regression",
-                                               ipa_server=ipa_factory())],
-                         scope="session")
 def test_login_with_sc_required(user):
     """Console-like login to the user with a smart card; smartcard required.
     Setup
