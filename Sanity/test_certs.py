@@ -1,18 +1,15 @@
 # author: Pavel Yadlouski <pyadlous@redhat.com>
-from os import remove
-from pathlib import Path
-
 from subprocess import run
 
-from fixtures import *
+import pytest
+
 from SCAutolib.models.authselect import Authselect
-from SCAutolib.models.file import File, OpensslCnf
-from SCAutolib.utils import local_ca_factory, user_factory
+from SCAutolib.models.file import File
+from SCAutolib.utils import local_ca_factory
 
 
-@pytest.mark.parametrize("user,sssd_db", [
-    (user_factory("local-user"), File("/etc/sssd/pki/sssd_auth_ca_db.pem"))])
-def test_wrong_issuer_cert(user, sssd_db, user_shell, tmp_path):
+@pytest.mark.parametrize("sssd_db", [File("/etc/sssd/pki/sssd_auth_ca_db.pem")])
+def test_wrong_issuer_cert(local_user, sssd_db, user_shell, tmp_path):
     """Test failed smart card login when root certificate stored in the
      /etc/sssd/pki/sssd_auth_ca_db.pem file has different
     issuer then certificate on the smart card.
@@ -38,12 +35,12 @@ def test_wrong_issuer_cert(user, sssd_db, user_shell, tmp_path):
     run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
 
     with Authselect():
-        with user.card(insert=True):
-            cmd = f'su {user.username} -c "whoami"'
+        with local_user.card(insert=True):
+            cmd = f'su {local_user.username} -c "whoami"'
             user_shell.sendline(cmd)
             user_shell.expect_exact(f"Password:")
-            user_shell.sendline(user.password)
-            user_shell.expect_exact(user.username)
+            user_shell.sendline(local_user.password)
+            user_shell.expect_exact(local_user.username)
 
     sssd_db.restore()
     run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
