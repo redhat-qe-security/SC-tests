@@ -6,13 +6,6 @@ log = logging.getLogger("PyTest")
 log.setLevel(logging.DEBUG)
 
 
-def pytest_configure():
-    """
-    This function add global variables to the test session
-    """
-    pytest.ipa_server = ipa_factory()
-
-
 def pytest_addoption(parser):
     """
     Specification of CLI options.
@@ -60,14 +53,18 @@ def pytest_generate_tests(metafunc):
     user type by adding `local_user` argmunet inseted of `user` argument.
     Similar is true for `ipa_user` argument.
     """
+    user_type = metafunc.config.getoption("user_type")
+    if user_type == "ipa":
+        pytest.ipa_server = ipa_factory()
+
     if 'user' in metafunc.fixturenames:
         users = []
-        if metafunc.config.getoption("user_type") in ["local", "all"]:
+        if user_type in ["local", "all"]:
             u = user_factory(metafunc.config.getoption("local_username"))
             assert u.local
             users.append(u)
 
-        if metafunc.config.getoption("user_type") in ["ipa", "all"]:
+        if user_type in ["ipa", "all"]:
             u = user_factory(metafunc.config.getoption("ipa_username"), ipa_server=pytest.ipa_server)
             assert not u.local
             users.append(u)
