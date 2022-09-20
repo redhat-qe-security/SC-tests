@@ -14,7 +14,7 @@ def pytest_configure(config):
     global local_user
     user_type = config.getoption("user_type")
 
-    if user_type == "ipa":
+    if user_type in ["ipa", "all"]:
         log.debug("Loading IPA client")
         pytest.ipa_server = ipa_factory()
         log.debug("IPA client is loaded")
@@ -88,7 +88,7 @@ def pytest_generate_tests(metafunc):
         if user_type in ["ipa", "all"]:
             users.append(ipa_user)
         metafunc.parametrize("user", users)
-    elif 'ipa_user' in metafunc.fixturenames:
+    if 'ipa_user' in metafunc.fixturenames:
         metafunc.parametrize("ipa_user", [ipa_user])
-    elif 'local_user' in metafunc.fixturenames:
+    if 'local_user' in metafunc.fixturenames:
         metafunc.parametrize("local_user", [local_user])
