@@ -1,9 +1,35 @@
-from fixtures import *
-from SCAutolib.utils import user_factory, ipa_factory
 import logging
+
+from SCAutolib.utils import user_factory, ipa_factory
+from fixtures import *
 
 log = logging.getLogger("PyTest")
 log.setLevel(logging.DEBUG)
+ipa_user = None
+local_user = None
+
+
+def pytest_configure(config):
+    global ipa_user
+    global local_user
+    user_type = config.getoption("user_type")
+
+    if user_type == "ipa":
+        log.debug("Loading IPA client")
+        pytest.ipa_server = ipa_factory()
+        log.debug("IPA client is loaded")
+        log.debug("Loading IPA user")
+        ipa_user = user_factory(
+            config.getoption("ipa_username"),
+            ipa_server=pytest.ipa_server)
+        assert not ipa_user.local
+        log.debug("IPA user is loaded")
+    if user_type in ["local", "all"]:
+        log.debug("Loading local user")
+        local_user = user_factory(config.getoption(
+            "local_username"))
+        assert local_user.local
+        log.debug("Local user is loaded")
 
 
 def pytest_addoption(parser):
@@ -54,27 +80,15 @@ def pytest_generate_tests(metafunc):
     Similar is true for `ipa_user` argument.
     """
     user_type = metafunc.config.getoption("user_type")
-    if user_type == "ipa":
-        pytest.ipa_server = ipa_factory()
 
     if 'user' in metafunc.fixturenames:
         users = []
         if user_type in ["local", "all"]:
-            u = user_factory(metafunc.config.getoption("local_username"))
-            assert u.local
-            users.append(u)
-
+            users.append(local_user)
         if user_type in ["ipa", "all"]:
-            u = user_factory(metafunc.config.getoption("ipa_username"), ipa_server=pytest.ipa_server)
-            assert not u.local
-            users.append(u)
-
+            users.append(ipa_user)
         metafunc.parametrize("user", users)
     elif 'ipa_user' in metafunc.fixturenames:
-        u = user_factory(metafunc.config.getoption("ipa_username"), ipa_server=pytest.ipa_server)
-        assert not u.local
-        metafunc.parametrize("ipa_user", [u])
+        metafunc.parametrize("ipa_user", [ipa_user])
     elif 'local_user' in metafunc.fixturenames:
-        u = user_factory(metafunc.config.getoption("local_username"))
-        assert u.local
-        metafunc.parametrize("local_user", [u])
+        metafunc.parametrize("local_user", [local_user])
