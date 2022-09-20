@@ -1,19 +1,15 @@
 import pytest
-from SCAutolib.src.authselect import Authselect
-from SCAutolib.src.virt_card import VirtCard
 
-from fixtures import ipa_user_, ipa_user, user_shell
+import conftest
+from SCAutolib.models.authselect import Authselect
 
 
 @pytest.mark.parametrize("required,insert,expect,secret",
-                         [(False, False, "Password:", ipa_user_().PASSWD),
-                          (False, True, f"PIN for {ipa_user_().USERNAME}:",
-                           ipa_user_().PIN),
-                          (True, False, "Password:", ipa_user_().PASSWD),
-                          (True, True, f"PIN for {ipa_user_().USERNAME}:",
-                           ipa_user_().PIN)])
-def test_kerberos_change_passwd(ipa_user, user_shell, required, insert, expect,
-                                secret):
+                         [(False, False, "Password:", conftest.ipa_user.password),
+                          (False, True, f"PIN for {conftest.ipa_user.username}:", conftest.ipa_user.pin),
+                          (True, False, "Password:", conftest.ipa_user.password),
+                          (True, True, f"PIN for {conftest.ipa_user.username}: ", conftest.ipa_user.pin)])
+def test_kerberos_change_passwd(ipa_user, user_shell, required, insert, expect, secret):
     """Kerberos user tries to change it kerberos password after he is logged
     in to the system.
 
@@ -63,10 +59,11 @@ def test_kerberos_change_passwd(ipa_user, user_shell, required, insert, expect,
         - After correct PIN is inserted, user is successfully logged in
         - Warning about changing the password is shown
      """
+
     with Authselect(required=required):
-        with VirtCard(ipa_user.USERNAME, insert=insert) as f:
-            cmd = f"su {ipa_user.USERNAME} -c 'passwd'"
+        with ipa_user.card(insert=insert):
+            cmd = f"su {ipa_user.username} -c 'passwd'"
             user_shell.sendline(cmd)
             user_shell.expect_exact(expect)
             user_shell.sendline(secret)
-            user_shell.expect_exact(f"Changing password for user {ipa_user.USERNAME}.")
+            user_shell.expect_exact(f"Changing password for user {ipa_user.username}.")
