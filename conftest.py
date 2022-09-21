@@ -6,22 +6,24 @@ from fixtures import *
 log = logging.getLogger("PyTest")
 log.setLevel(logging.DEBUG)
 ipa_user = None
+ipa_server = None
 local_user = None
 
 
 def pytest_configure(config):
     global ipa_user
+    global ipa_server
     global local_user
     user_type = config.getoption("user_type")
 
     if user_type in ["ipa", "all"]:
         log.debug("Loading IPA client")
-        pytest.ipa_server = ipa_factory()
+        ipa_server = ipa_factory()
         log.debug("IPA client is loaded")
         log.debug("Loading IPA user")
         ipa_user = user_factory(
             config.getoption("ipa_username"),
-            ipa_server=pytest.ipa_server)
+            ipa_server=ipa_server)
         assert not ipa_user.local
         log.debug("IPA user is loaded")
     if user_type in ["local", "all"]:
