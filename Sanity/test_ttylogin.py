@@ -89,6 +89,7 @@ def test_login_without_sc(user):
         login_shell.expect(f"Password:")
         login_shell.sendline(user.password)
         login_shell.expect(user.username)
+        login_shell.sendline("exit")
 
 
 def test_login_with_sc_required(user):
