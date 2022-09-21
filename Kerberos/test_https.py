@@ -1,33 +1,75 @@
+from http import server
 import re
-import sys
+import ssl
+import threading
+from subprocess import check_output
 from time import sleep
 
 import pytest
-from fixtures import ipa_user, https_server, root_shell, ipa_meta_client
-from subprocess import check_output
-from SCAutolib.src import virt_card
+
+from SCAutolib.models.file import File
+from SCAutolib.models.user import IPAUser
+from SCAutolib.utils import _gen_private_key
+from conftest import ipa_server
 
 
-@pytest.mark.parametrize('principal,ca', [("https-server", "ipa")])
+def _https_server(user_cert, user_key):
+    server_address = ("127.0.0.1", 8888)
+    httpd = server.HTTPServer(server_address, server.SimpleHTTPRequestHandler)
+    httpd.socket = ssl.wrap_socket(httpd.socket,
+                                   server_side=True,
+                                   certfile=str(user_cert),
+                                   keyfile=str(user_key),
+                                   ca_certs="/etc/ipa/ca.crt",
+                                   ssl_version=ssl.PROTOCOL_TLSv1_2,
+                                   cert_reqs=ssl.CERT_REQUIRED,
+                                   do_handshake_on_connect=True)
+    httpd.serve_forever()
+
+
+@pytest.fixture
+def https_server(tmp_path):
+    https_user = IPAUser(ipa_server,
+                         username="https-server",
+                         password="SECret.123",
+                         pin="123456",
+                         local=False,
+                         card_dir=tmp_path)
+    https_user.add_user()
+    key = tmp_path.joinpath("https-server-key.pem")
+    _gen_private_key(key)
+    https_user.key = key
+    csr = https_user.gen_csr()
+    cert_out = tmp_path.joinpath("cert.pem")
+    ipa_server.request_cert(csr, https_user.username, cert_out)
+
+    hosts = File("/etc/hosts")
+    with hosts.path.open("a") as f:
+        f.write(f"127.0.0.1 {https_user.username}")
+    try:
+        server_t = threading.Thread(name='daemon_server',
+                                    args=(cert_out, https_user.key),
+                                    daemon=True,
+                                    target=_https_server)
+        server_t.start()
+
+        sleep(5)
+        yield https_user.username
+        server_t.join(timeout=1)
+    finally:
+        ipa_server.del_user(https_user)
+
+
 def test_access_secure_webpage_on_https(ipa_user, https_server, root_shell, tmpdir):
+    """Test that kerberos user is asked for PIN when accessing a secure webpage"""
     check_output(["certutil", "-N", "-d", tmpdir, "--empty-password"], encoding="utf-8")
 
     check_output(["certutil", "-A", "-n", "ipa-ca", "-t", 'TC,C,T', "-d", tmpdir,
                  "-i", "/etc/ipa/ca.crt"], encoding="utf-8")
 
-    server_addr = f"127.0.0.1 {https_server}\n"
-    with open("/etc/hosts", "r") as f:
-        content = f.read()
-    if server_addr not in content:
-        # NSS client requires that name of requested server is the same as the
-        # CN from the server certificate. To fulfill this requirement,
-        # principal name should be added to the /etc/hosts as it is the
-        with open("/etc/hosts", "a") as f:
-            f.write(f"\n{server_addr}")
-
-    with virt_card.VirtCard(ipa_user.USERNAME, insert=True):
+    with ipa_user.card(insert=True):
         out = check_output(["modutil", "-list", "-dbdir", tmpdir], encoding="utf-8")
-        uri = re.findall(rf"uri:\s(.*{ipa_user.USERNAME}.*)\n", out)
+        uri = re.findall(rf"uri:\s(.*{ipa_user.username}.*)\n", out)
         assert len(uri) == 1, f"Only one URI should be present in the " \
                               f"database. Found URIs: {uri}"
         uri = uri[0]
@@ -35,6 +77,6 @@ def test_access_secure_webpage_on_https(ipa_user, https_server, root_shell, tmpd
 
         cmd = f'{nss_client} -n "{uri}" -d {tmpdir} -p 8888 -h {https_server} -V tls1.2: -Q'
         root_shell.sendline(cmd)
-        root_shell.expect_exact(f'Enter Password or Pin for "{ipa_user.USERNAME}":', timeout=20)
-        root_shell.sendline(ipa_user.PIN)
+        root_shell.expect_exact(f'Enter Password or Pin for "{ipa_user.username}":', timeout=20)
+        root_shell.sendline(ipa_user.pin)
         root_shell.expect_exact("Received 0 Cert Status items (OCSP stapled data)", timeout=20)
