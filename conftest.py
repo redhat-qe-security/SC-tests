@@ -64,6 +64,8 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     """
+    Injecting fixtures into tests.
+
     This function would set 'user' argument in test (if present) for users that
     we want to test.
 
@@ -94,3 +96,5 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("ipa_user", [ipa_user])
     if 'local_user' in metafunc.fixturenames:
         metafunc.parametrize("local_user", [local_user])
+    if "ipa_server" in metafunc.fixturenames:
+        metafunc.parametrize("ipa_server", [ipa_server])

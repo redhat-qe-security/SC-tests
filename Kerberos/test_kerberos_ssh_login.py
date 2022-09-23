@@ -70,14 +70,14 @@ def test_krb_change_passwd_ssh(ipa_user, user_shell, ipa_login):
 
 # Login with kerberos user using a smart card and then check if we can still ssh into the system
 # with different user.
-def test_different_user_ssh(ipa_user, local_user, user_shell):
+def test_different_user_ssh(ipa_user, base_user, user_shell):
     with Authselect(required=False):
         with ipa_user.card(insert=True):
             user_shell.sendline(f"su - {ipa_user.username}")
             user_shell.expect(f"PIN for {ipa_user.username}", timeout=10)
             user_shell.sendline(ipa_user.pin)
-            user_shell.sendline(f"ssh -o StrictHostKeyChecking=no {local_user.username}@localhost")
+            user_shell.sendline(f"ssh -o StrictHostKeyChecking=no {base_user.username}@localhost")
             user_shell.expect_exact(f"Password")
-            user_shell.sendline(local_user.password)
+            user_shell.sendline(base_user.password)
             user_shell.sendline(f"whoami")
-            user_shell.expect_exact(local_user.username)
+            user_shell.expect_exact(base_user.username)

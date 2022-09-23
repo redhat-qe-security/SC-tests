@@ -183,15 +183,15 @@ def test_krb_user_su_correct_password(ipa_user, user_shell):
         user_shell.close()
 
 
-def test_krb_user_ldap_mapping(ipa_user, user_shell, sssd):
+def test_krb_user_ldap_mapping(ipa_user, ipa_server, user_shell, sssd):
     """Test for LDAP mapping of Kerberos user provided by IPA server"""
-    changes = ({"section": f"domain/{pytest.ipa_server.domain}",
+    changes = ({"section": f"domain/{ipa_server.domain}",
                 "key": "id_provider",
                 "val": "ldap"},
-               {"section": f"certmap/{pytest.ipa_server.domain}/{ipa_user.username}",
+               {"section": f"certmap/{ipa_server.domain}/{ipa_user.username}",
                 "key": "matchrule",
                 "val": f"<SUBJECT>.*CN={ipa_user.username}.*"},
-               {"section": f"certmap/{pytest.ipa_server.domain}/{ipa_user.username}",
+               {"section": f"certmap/{ipa_server.domain}/{ipa_user.username}",
                 "key": "maprule",
                 "val": "(userCertificate;binary={cert!bin})"})
     with sssd as conf:
