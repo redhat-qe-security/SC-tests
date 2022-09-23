@@ -52,10 +52,11 @@ def test_login_with_sc(user):
     with Authselect():
         with user.card(insert=True):
             login_shell = login_shell_factory(user.username)
-            login_shell.expect(f"PIN for {user.username}:")
+            login_shell.expect([f"PIN for {user.username}:"])
             login_shell.sendline(user.pin)
-            login_shell.expect(user.username)
+            login_shell.expect([user.username])
             login_shell.sendline("exit")
+            login_shell.close()
 
 
 def test_login_without_sc(user):
@@ -86,9 +87,11 @@ def test_login_without_sc(user):
     """
     with Authselect():
         login_shell = login_shell_factory(user.username)
-        login_shell.expect(f"Password:")
+        login_shell.expect([f"Password:", pexpect.EOF])
         login_shell.sendline(user.password)
-        login_shell.expect(user.username)
+        login_shell.expect([user.username, pexpect.EOF])
+        login_shell.sendline("exit")
+        login_shell.close()
 
 
 def test_login_with_sc_required(user):
@@ -122,7 +125,8 @@ def test_login_with_sc_required(user):
     with Authselect(required=True):
         with user.card(insert=True):
             login_shell = login_shell_factory(user.username)
-            login_shell.expect(f"PIN for {user.username}:")
+            login_shell.expect([f"PIN for {user.username}:", pexpect.EOF])
             login_shell.sendline(user.pin)
-            login_shell.expect(user.username)
+            login_shell.expect([user.username, pexpect.EOF])
             login_shell.sendline("exit")
+            login_shell.close()
