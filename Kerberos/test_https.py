@@ -10,6 +10,7 @@ import pytest
 from SCAutolib.models.file import File
 from SCAutolib.models.user import IPAUser
 from SCAutolib.utils import _gen_private_key
+from SCAutolib.exceptions import SCAutolibException
 from conftest import ipa_server
 
 
@@ -35,7 +36,10 @@ def https_server(tmp_path):
                          pin="123456",
                          local=False,
                          card_dir=tmp_path)
-    https_user.add_user()
+    try:
+        https_user.add_user()
+    except SCAutolibException:
+        pass
     key = tmp_path.joinpath("https-server-key.pem")
     _gen_private_key(key)
     https_user.key = key

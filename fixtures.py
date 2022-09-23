@@ -28,5 +28,10 @@ def root_user():
 
 
 @pytest.fixture(scope="session")
+def base_user():
+    return user_factory("base-user")
+
+
+@pytest.fixture(scope="session")
 def sssd():
     return SSSDConf()
