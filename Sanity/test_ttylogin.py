@@ -132,3 +132,86 @@ def test_login_with_sc_required(user):
             login_shell.expect([user.username, pexpect.EOF])
             login_shell.sendline("exit")
             login_shell.close()
+
+
+def test_login_with_sc_wrong(user):
+    """Console-like login to the user with a smart card.
+
+    Setup
+        1. Create local CA
+        2. Create virtual smart card with certs signed by created CA
+        3. Update /etc/sssd/sssd.conf so it contains following fields
+            [sssd]
+            debug_level = 9
+            services = nss, pam,
+            domains = shadowutils
+            certificate_verification = no_ocsp
+            [pam]
+            debug_level = 9
+            pam_cert_auth = True
+            [domain/shadowutils]
+            debug_level = 9
+            id_provider = files
+            [certmap/shadowutils/username]
+            matchrule = <SUBJECT>.*CN=username.*
+        4. Setup authselect: authselect select sssd with-smartcard
+        5. Insert the card
+        6. Login as smartcard user (`exec login $USERNAME` from root shell)
+
+    Expected result
+        - User is asked for smartcard PIN
+        - User inserts wrong PIN
+        - User is told that the PIN is incorrect
+    """
+    with Authselect():
+        with user.card(insert=True):
+            login_shell = login_shell_factory(user.username)
+            login_shell.expect(f"PIN for {user.username}:")
+            # Omit the last digit of the PIN
+            login_shell.sendline(user.pin[:-1])
+            login_shell.expect("Login incorrect")
+            login_shell.close()
+
+
+def test_login_sc_required(user):
+    """Console-like login to the user with a smart card.
+
+    Setup
+        1. Create local CA
+        2. Create virtual smart card with certs signed by created CA
+        3. Update /etc/sssd/sssd.conf so it contains following fields
+            [sssd]
+            debug_level = 9
+            services = nss, pam,
+            domains = shadowutils
+            certificate_verification = no_ocsp
+            [pam]
+            debug_level = 9
+            pam_cert_auth = True
+            [domain/shadowutils]
+            debug_level = 9
+            id_provider = files
+            [certmap/shadowutils/username]
+            matchrule = <SUBJECT>.*CN=username.*
+        4. Setup authselect: authselect select sssd with-smartcard with-smartcard-required
+        5. Try to login without smart-card unsuccessfully
+        6. Insert the card
+        7. Log in
+
+    Expected result
+        - User is prompted to insert the card
+        - User inserts the card
+        - User types PIN the PIN
+        - User is successfully logged in
+    """
+    with Authselect(required=True):
+        login_shell = login_shell_factory(user.username)
+        login_shell.expect("Please insert smart card")
+
+        with user.card(insert=True):
+            login_shell.expect(f"PIN for {user.username}:")
+            login_shell.sendline(user.pin)
+            login_shell.expect(user.username)
+            login_shell.sendline("exit")
+            login_shell.close()
+
