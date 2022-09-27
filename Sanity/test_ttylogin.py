@@ -8,6 +8,7 @@ that TTY. Therefore, execution of login command in nearly the same way agetty
 does it is good approximation to manual testing in virtual console.
 """
 import sys
+from time import sleep
 
 import pexpect
 
@@ -19,6 +20,7 @@ def login_shell_factory(username):
     shell = pexpect.spawn(f"login {username}",
                           ignore_sighup=True, encoding="utf-8")
     shell.logfile = sys.stdout
+    sleep(3)
     return shell
 
 
@@ -87,9 +89,9 @@ def test_login_without_sc(user):
     """
     with Authselect():
         login_shell = login_shell_factory(user.username)
-        login_shell.expect([f"Password:", pexpect.EOF])
+        login_shell.expect(f"Password:")
         login_shell.sendline(user.password)
-        login_shell.expect([user.username, pexpect.EOF])
+        login_shell.expect(user.username)
         login_shell.sendline("exit")
         login_shell.close()
 
