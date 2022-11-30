@@ -13,7 +13,8 @@ def test_modutil_token_info(local_user, root_shell):
 
 
 def test_pam_services_config(local_user, root_shell, sssd):
-    """Test for PAM configuration for smart card authentication.
+    """Test verifies that sssd configuration option pam_p11_allowed_services
+    works as expected for smart card authentication.
     GitHub issue: https://github.com/SSSD/sssd/issues/3967"""
     with open("/etc/pam.d/pam_cert_service", "w") as f:
         f.write("auth\trequired\tpam_sss.so require_cert_auth")
@@ -26,8 +27,8 @@ def test_pam_services_config(local_user, root_shell, sssd):
                    "Authentication service cannot retrieve authentication info"
             root_shell.expect_exact("Please insert smart card")
             sc.insert()
-            root_shell.expect_exact("Password:")
-            root_shell.sendline(local_user.password)
+            root_shell.expect_exact("Please (re)insert (different) Smartcard")
+            root_shell.sendline()
             root_shell.expect_exact(fail)
             sc.remove()
 
