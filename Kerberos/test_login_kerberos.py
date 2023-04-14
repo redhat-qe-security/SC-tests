@@ -55,6 +55,7 @@ def test_kerberos_login_to_root(ipa_user, user_shell, root_user):
             user_shell.sendline(f"su - {ipa_user.username}")
             user_shell.expect(f"PIN for {ipa_user.username}", timeout=10)
             user_shell.sendline(ipa_user.pin)
+            user_shell.expect(ipa_user.username)
             user_shell.sendline("su - -c 'whoami'")
             user_shell.expect("Password")
             user_shell.sendline(root_user.password)
