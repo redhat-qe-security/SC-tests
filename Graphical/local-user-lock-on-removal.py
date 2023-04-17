@@ -26,7 +26,7 @@ and share the following setup steps:
 """
 
 from SCAutolib.models.authselect import Authselect
-from SCAutolib.models.gui import GUI
+from SCAutolib.models.gui import GUI, keyboard
 from time import sleep
 import pytest
 
@@ -57,7 +57,7 @@ def test_lock_on_removal(local_user, required):
             sleep(5)
             gui.assert_text('PIN')
             gui.kb_write(local_user.pin)
-            gui.kb_send('enter', wait_time=10)
+            gui.kb_send('enter', wait_time=20)
             # confirm that you are logged in
             gui.assert_text('Activities')
 
@@ -78,7 +78,7 @@ def test_lock_on_removal(local_user, required):
             # click on the password field
             gui.click_on('PIN')
             gui.kb_write(local_user.pin)
-            gui.kb_send('enter', wait_time=10)
+            gui.kb_send('enter', wait_time=20)
             # confirm that you are logged back in
             gui.assert_text('Activities')
 
@@ -104,7 +104,7 @@ def test_lock_on_removal_password(local_user):
         with local_user.card(insert=False) as card:
             gui.click_on(local_user.username)
             gui.kb_write(local_user.password)
-            gui.kb_send('enter', wait_time=10)
+            gui.kb_send('enter', wait_time=20)
             gui.assert_text('Activities')
 
             card.insert()
@@ -145,13 +145,18 @@ def test_lockscreen_password(local_user, lock_on_removal):
             ):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password)
-        gui.kb_send('enter', wait_time=10)
+        gui.kb_send('enter', wait_time=20)
         gui.assert_text('Activities')
 
         card.insert()
         sleep(10)
         # press shortcut to lock the screen
-        gui.kb_send('windows+l', wait_time=5, screenshot=False)
+        # keyboard.send('windows+l') cannot be parsed properly
+        # this is a workaround for keyboard library
+        keyboard.press((125, 126),)
+        keyboard.send('l')
+        keyboard.release((125, 126),)
+        sleep(10)
 
         # Wake up the black screen by pressing enter
         gui.kb_send('enter', screenshot=False)

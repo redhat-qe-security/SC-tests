@@ -65,7 +65,7 @@ def test_login_with_sc(local_user, required):
         gui.kb_write(local_user.pin)
 
         with assert_log(SECURE_LOG, expected_log):
-            gui.kb_send('enter', wait_time=10)
+            gui.kb_send('enter', wait_time=20)
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
         gui.assert_text('Activities')
@@ -99,7 +99,7 @@ def test_login_with_sc_wrong(local_user, required):
         gui.kb_write(local_user.pin[:-1])
 
         with assert_log(SECURE_LOG, expected_log):
-            gui.kb_send('enter', wait_time=10)
+            gui.kb_send('enter', wait_time=20)
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
         gui.assert_no_text('Activities')
@@ -128,7 +128,7 @@ def test_login_password(local_user):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password)
         with assert_log(SECURE_LOG, expected_log):
-            gui.kb_send('enter', wait_time=10)
+            gui.kb_send('enter', wait_time=20)
         gui.assert_text('Activities')
 
 
@@ -157,7 +157,7 @@ def test_login_password_wrong(local_user):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password[:-1])
         with assert_log(SECURE_LOG, expected_log):
-            gui.kb_send('enter', wait_time=10)
+            gui.kb_send('enter', wait_time=20)
 
         gui.assert_no_text('Activities')
         gui.assert_text('Password')
@@ -196,7 +196,7 @@ def test_insert_card_prompt(local_user):
         )
 
         with assert_log(SECURE_LOG, expected_log):
-            gui.kb_send('enter', wait_time=10)
+            gui.kb_send('enter', wait_time=20)
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
         gui.assert_text('Activities')
