@@ -55,7 +55,7 @@ def test_login_with_sc(local_user, required):
             logged into GNOME desktop environment successfully
     """
     expected_log = (
-        r'.* localhost gdm-smartcard\]\[[0-9]+\]: '
+        r'.* gdm-smartcard\]\[[0-9]+\]: '
         r'pam_sss\(gdm-smartcard:auth\): authentication success;'
         r'.*user=' + local_user.username + r'@shadowutils.*'
     )
@@ -89,7 +89,7 @@ def test_login_with_sc_wrong(local_user, required):
         C. A message about incorrect PIN is displayed and user is not logged in.
     """
     expected_log = (
-        r'.* localhost gdm-smartcard\]\[[0-9]+\]: '
+        r'.* gdm-smartcard\]\[[0-9]+\]: '
         r'pam_sss\(gdm-smartcard:auth\): authentication failure;'
         r'.*user=' + local_user.username + r'@shadowutils.*'
     )
@@ -148,7 +148,7 @@ def test_login_password_wrong(local_user):
             and login is unsuccessful.
     """
     expected_log = (
-        r'.* localhost gdm-password\]\[[0-9]+\]: '
+        r'.* gdm-password\]\[[0-9]+\]: '
         r'pam_unix\(gdm-password:auth\): authentication failure;'
         r'.*user=' + local_user.username + r'.*'
     )
@@ -190,7 +190,7 @@ def test_insert_card_prompt(local_user):
         gui.kb_write(local_user.pin)
 
         expected_log = (
-            r'.* localhost gdm-smartcard\]\[[0-9]+\]: '
+            r'.* gdm-smartcard\]\[[0-9]+\]: '
             r'pam_sss\(gdm-smartcard:auth\): authentication success;'
             r'.*user=' + local_user.username + r'@shadowutils.*'
         )
