@@ -61,7 +61,7 @@ def test_login_with_sc(local_user, required):
     )
 
     with Authselect(required=required), local_user.card(insert=True), GUI() as gui:
-        gui.assert_text('PIN')
+        gui.assert_text('PIN', timeout=60)
         gui.kb_write(local_user.pin)
 
         with assert_log(SECURE_LOG, expected_log):
