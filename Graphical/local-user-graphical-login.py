@@ -2,7 +2,6 @@
 This module contains tests for logging into GUI using GDM.
 Most of the tests are parametrized to test both
 optional and required smart card in authselect.
-Lock-on-removal option is not set as it is irelevent for present tests.
 The tests within the module try logging in both using password and
 smart card with PIN. Both wrong password and wrong PIN are tested too.
 All tests depend on SCAutolib GUI module.
@@ -163,7 +162,8 @@ def test_login_password_wrong(local_user):
         gui.assert_text('Password')
 
 
-def test_insert_card_prompt(local_user):
+@pytest.mark.parametrize("lock_on_removal", [True, False])
+def test_insert_card_prompt(local_user, lock_on_removal):
     """Local user tries to log in with GDM before inserting card,
         with sc required.
 
@@ -180,7 +180,7 @@ def test_insert_card_prompt(local_user):
         C. GDM shows "insert PIN" prompt
         D. User is logged in successfully.
     """
-    with (Authselect(required=True),
+    with (Authselect(required=True, lock_on_removal=lock_on_removal),
           local_user.card(insert=False) as card,
           GUI() as gui):
         gui.assert_text('insert')

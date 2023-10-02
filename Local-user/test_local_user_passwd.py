@@ -3,8 +3,10 @@ import pytest
 from SCAutolib.models.authselect import Authselect
 
 
-@pytest.mark.parametrize("required", [True, False])
-def test_change_local_user_passwd(local_user, user_shell, required):
+@pytest.mark.parametrize(
+    "required,lock_on_removal", [(True, True), (True, False), (False, True), (False, False),]
+)
+def test_change_local_user_passwd(local_user, user_shell, required, lock_on_removal):
     """Run 'passwd' command when smartcard login is enforced and after user is
     authenticated in with a smartcard.
 
@@ -37,7 +39,7 @@ def test_change_local_user_passwd(local_user, user_shell, required):
         - Users is asked to change it local password
         - No mentioning of the smart card
     """
-    with Authselect(required=required):
+    with Authselect(required=required, lock_on_removal=lock_on_removal):
         with local_user.card(insert=True):
             cmd = f"su {local_user.username} -c 'passwd'"
             user_shell.sendline(cmd)
