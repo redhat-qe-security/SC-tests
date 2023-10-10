@@ -12,24 +12,22 @@ local_user = None
 tokens = None
 
 
-def load_tokens(user, tokenlist):
+def load_tokens(user, token_list):
     log.info("Loading tokens")
-    user.card = token_factory(tokenlist[0])
-    log.debug(f"Token {tokenlist[0]} is loaded")
-    if len(tokenlist) > 1:
-        log.debug(f"Loading 2nd token: {tokenlist[1]}")
-        user.card_2 = token_factory(tokenlist[1])
-        log.debug(f"Token {tokenlist[1]} is loaded")
-    else:
-        log.debug("2nd token not defined")
+    for index, token in enumerate(token_list):
+         log.debug("Loading %s. token", index)
+         setattr(user, f"card_{index}", token_factory(token))
+         log.debug(f"Token %s is loaded", index)
 
 
-def load_ca(user):
+def update_ca(user, token_lit):
     log.info("Loading local CA")
-    ca = local_ca_factory(card=user.card)
-    assert Path.is_file(ca._ca_pki_db)
-    log.debug("Local CA is loaded")
-    return ca
+    for index, token in enumerate(token_list):
+        card_name = f"card_{index}"
+        card = getattr(user, card_name, None)
+        ca = local_ca_factory(ca_name=card.ca_name)
+        ca.update_ca_db()
+    log.debug("CA database is updated")
 
 
 def pytest_configure(config):
@@ -65,8 +63,7 @@ def pytest_configure(config):
         log.debug("Local user is loaded")
         load_tokens(local_user, tokens)
         local_user.pin = local_user.card.pin
-        ca = load_ca(local_user)
-        ca.update_ca_db()
+        update_ca(local_user, tokens)
 
 
 def pytest_addoption(parser):
