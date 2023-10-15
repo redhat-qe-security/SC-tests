@@ -5,7 +5,7 @@ import logging
 
 from SCAutolib import run
 from SCAutolib.models.file import SSSDConf
-from SCAutolib.utils import user_factory
+from SCAutolib.utils import load_user
 
 
 @pytest.fixture(scope="function")
@@ -44,12 +44,12 @@ def allow_sudo_commands(ipa_user):
 
 @pytest.fixture(scope="session")
 def root_user():
-    return user_factory("root")
+    return load_user("root")
 
 
 @pytest.fixture(scope="session")
 def base_user():
-    return user_factory("base-user")
+    return load_user("base-user")
 
 
 @pytest.fixture(scope="session")
