@@ -1,6 +1,7 @@
 import logging
 
-from SCAutolib.utils import user_factory, ipa_factory
+from SCAutolib.utils import user_factory, ipa_factory, token_factory, \
+    local_ca_factory
 from fixtures import *
 from pathlib import Path
 
@@ -16,11 +17,11 @@ def load_tokens(user, token_list):
     log.info("Loading tokens")
     for index, token in enumerate(token_list):
          log.debug("Loading %s. token", index)
-         setattr(user, f"card_{index}", token_factory(token))
+         setattr(user, f"card_{index}", token_factory(token, update_sssd = True))
          log.debug(f"Token %s is loaded", index)
 
 
-def update_ca(user, token_lit):
+def update_ca(user, token_list):
     log.info("Loading local CA")
     for index, token in enumerate(token_list):
         card_name = f"card_{index}"
@@ -51,18 +52,29 @@ def pytest_configure(config):
         ipa_user = user_factory(
             config.getoption("ipa_username"),
             ipa_server=ipa_server)
-        assert not ipa_user.local
+        assert ipa_user.user_type == "ipa"
         log.debug("IPA user is loaded")
         load_tokens(ipa_user, tokens)
+        ipa_user.card = ipa_user.card_0
         ipa_user.pin = ipa_user.card.pin
     if user_type in ["local", "all"]:
         log.debug("Loading local user")
         local_user = user_factory(config.getoption(
             "local_username"))
-        assert local_user.local
+        assert local_user.user_type == "local"
         log.debug("Local user is loaded")
         load_tokens(local_user, tokens)
+        # backwards compatibility fix. Older tests expected one virtual card
+        # as attribute of user - i.e. user.card and approached card this way.
+        # As of now we expect user can have multiple cards, they are marked
+        # user.card_0, user.card_1, ... however, for backwards compatibility,
+        # we need to provide user.card:
+        local_user.card = local_user.card_0
+
+        # pin used to be user attribute. as we can currently have multiple cards
+        # pin was moved to card. For backwards compatibility:
         local_user.pin = local_user.card.pin
+
         update_ca(local_user, tokens)
 
 
