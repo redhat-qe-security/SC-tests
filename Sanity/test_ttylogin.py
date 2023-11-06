@@ -90,7 +90,7 @@ def test_login_without_sc(user):
     """
     with Authselect():
         login_shell = login_shell_factory(user.username)
-        login_shell.expect(f"Password:")
+        login_shell.expect("Password:")
         login_shell.sendline(user.password)
         login_shell.expect(user.username)
         login_shell.sendline("exit")
@@ -132,7 +132,7 @@ def test_login_without_sc_wrong(user):
     """
     with Authselect():
         login_shell = login_shell_factory(user.username)
-        login_shell.expect(f"Password:")
+        login_shell.expect("Password:")
         login_shell.sendline("wrong")
         login_shell.expect("Login incorrect")
         login_shell.sendline("exit")
@@ -260,9 +260,9 @@ def test_login_sc_required(user, lock_on_removal):
             login_shell.sendline("exit")
             login_shell.close()
 
+
 @pytest.mark.parametrize(
-        "required,lock_on_removal", [(True, True), (True, False), (False, True), (False, False),]
-    )
+    "required,lock_on_removal", [(True, True), (True, False), (False, True), (False, False),])
 def test_login_local_user_passwd(user, required, lock_on_removal):
     """Run 'passwd' command when smartcard login is enforced and after user is
     authenticated in with a smartcard.
@@ -305,6 +305,7 @@ def test_login_local_user_passwd(user, required, lock_on_removal):
             login_shell.expect([user.username])
             login_shell.sendline("passwd")
             login_shell.expect_exact(f"Changing password for user {user.username}.")
+
 
 @pytest.mark.parametrize(
     "required,lock_on_removal", [(True, True), (True, False), (False, True), (False, False),]
@@ -355,6 +356,7 @@ def test_login_local_su_to_root(user, root_user, required, lock_on_removal):
             login_shell.expect_exact("Password:")
             login_shell.sendline(root_user.password)
             login_shell.expect_exact("root")
+
 
 @pytest.mark.parametrize("required", [True, False])
 def test_login_kerberos_su_to_root(ipa_user, root_user, required):

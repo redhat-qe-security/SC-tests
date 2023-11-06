@@ -138,11 +138,9 @@ def test_lockscreen_password(local_user, lock_on_removal):
         D. The screen is locked
         E. Screen is unlocked successfully
     """
-    with (
-        Authselect(required=False, lock_on_removal=lock_on_removal),
-        GUI() as gui,
-        local_user.card(insert=False) as card
-            ):
+    with (Authselect(required=False, lock_on_removal=lock_on_removal),
+          GUI() as gui,
+          local_user.card(insert=False) as card):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password)
         gui.kb_send('enter', wait_time=20)

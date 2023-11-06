@@ -38,7 +38,7 @@ def test_wrong_issuer_cert(local_user, sssd_db, user_shell, tmp_path):
         with local_user.card(insert=True):
             cmd = f'su {local_user.username} -c "whoami"'
             user_shell.sendline(cmd)
-            user_shell.expect_exact(f"Password:")
+            user_shell.expect_exact("Password:")
             user_shell.sendline(local_user.password)
             user_shell.expect_exact(local_user.username)
 

@@ -1,0 +1,25 @@
+name: Linter
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  flake:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3
+
+    - name: Install dependencies
+      run: python3 -m pip install flake8
+
+    - name: Running flake8
+      run: flake8

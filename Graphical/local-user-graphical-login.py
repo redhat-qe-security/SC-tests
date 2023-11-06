@@ -120,8 +120,7 @@ def test_login_password(local_user):
         C. User is successfully logged into GNOME desktop environment
     """
     expected_log = (
-        r'.* pam_unix\(gdm-password:session\): session opened for user .*'
-        )
+        r'.* pam_unix\(gdm-password:session\): session opened for user .*')
 
     with Authselect(required=False), GUI() as gui:
         gui.click_on(local_user.username)

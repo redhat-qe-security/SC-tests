@@ -139,7 +139,8 @@ def test_kerberos_user_sudo_wrong_password(ipa_user, user_shell):
             user_shell.expect("Sorry, try again.")
 
 
-def test_krb_user_sudo_correct_password_sc_required_no_sc(ipa_user, user_shell, allow_sudo_commands):
+def test_krb_user_sudo_correct_password_sc_required_no_sc(ipa_user,
+                                                          user_shell, allow_sudo_commands):
     with Authselect(required=True, sudo=True):
         with ipa_user.card(insert=True) as sc:
             output = pexpect.run("ls /", encoding="utf-8")

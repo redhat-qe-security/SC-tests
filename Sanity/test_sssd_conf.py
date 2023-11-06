@@ -152,7 +152,8 @@ def test_matchrule_defined_for_other_user(local_user, sssd, user_shell):
             user_shell.expect(local_user.username)
 
 
-@pytest.mark.parametrize("rule", ["<SUBJECT>.*CN=testuser.*", f"<SUBJECT>.*UID={local_user_conftest.username}.*"])
+@pytest.mark.parametrize("rule", ["<SUBJECT>.*CN=testuser.*",
+                                  f"<SUBJECT>.*UID={local_user_conftest.username}.*"])
 def test_user_mismatch(local_user, sssd, user_shell, rule):
     """Test smart card login fail when sssd.conf do not contain user from
     the smart card (wrong user in matchrule)"""
