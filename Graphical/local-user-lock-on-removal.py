@@ -136,7 +136,7 @@ def test_lockscreen_password(local_user, lock_on_removal):
         B. GDM starts and user logs in successfully
         C. Nothing happens
         D. The screen is locked
-        E. Screen is unlocked succesfully
+        E. Screen is unlocked successfully
     """
     with (
         Authselect(required=False, lock_on_removal=lock_on_removal),

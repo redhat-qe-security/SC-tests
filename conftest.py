@@ -70,7 +70,7 @@ def pytest_generate_tests(metafunc):
     we want to test.
 
     For example, if we want to execute the test only with local user, we
-    need to se `--with-user-type local` in pytest command. Defualt name for
+    need to se `--with-user-type local` in pytest command. Default name for
     local user is "local-user". If the system is configured to a user with
     different name, set this name with `--local-username NAME` option.
     Similar options are available for IPA user. If we want to test with both,
@@ -78,9 +78,9 @@ def pytest_generate_tests(metafunc):
     and IPA user using names specified by `--local-username` and `--ipa-username`
     (or default names if not specified).
 
-    To avoid execuing test that are not relevant for the user type (e.g. test
-    that is relevant only for local user), this test has to specify expicitly
-    user type by adding `local_user` argmunet inseted of `user` argument.
+    To avoid executing test that are not relevant for the user type (e.g. test
+    that is relevant only for local user), this test has to specify explicitly
+    user type by adding `local_user` argmunet inserted of `user` argument.
     Similar is true for `ipa_user` argument.
     """
     user_type = metafunc.config.getoption("user_type")
