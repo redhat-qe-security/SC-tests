@@ -89,7 +89,7 @@ def test_su_login_with_sc_wrong(local_user, user_shell, required):
             user_shell.sendline(cmd)
             user_shell.expect_exact(f"PIN for {local_user.username}:")
             user_shell.sendline("wrong")
-            user_shell.expect(f"su: Authentication failure")
+            user_shell.expect("su: Authentication failure")
 
 
 def test_gdm_login_sc_required(local_user, root_shell):
@@ -171,9 +171,10 @@ def test_su_login_without_sc(local_user, user_shell):
     with Authselect():
         cmd = f"su - {local_user.username} -c whoami"
         user_shell.sendline(cmd)
-        user_shell.expect_exact(f"Password:")
+        user_shell.expect_exact("Password:")
         user_shell.sendline(local_user.password)
         user_shell.expect_exact(local_user.username)
+
 
 @pytest.mark.parametrize(
     "required,lock_on_removal", [(True, True), (True, False), (False, True), (False, False),]

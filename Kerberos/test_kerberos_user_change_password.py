@@ -6,9 +6,11 @@ from SCAutolib.models.authselect import Authselect
 
 @pytest.mark.parametrize("required,insert,expect,secret",
                          [(False, False, "Password:", conftest.ipa_user.password),
-                          (False, True, f"PIN for {conftest.ipa_user.username}:", conftest.ipa_user.pin),
+                          (False, True, f"PIN for {conftest.ipa_user.username}: ",
+                           conftest.ipa_user.pin),
                           (True, False, "Password:", conftest.ipa_user.password),
-                          (True, True, f"PIN for {conftest.ipa_user.username}: ", conftest.ipa_user.pin)])
+                          (True, True, f"PIN for {conftest.ipa_user.username}: ",
+                           conftest.ipa_user.pin)])
 def test_kerberos_change_passwd(ipa_user, user_shell, required, insert, expect, secret):
     """Kerberos user tries to change it kerberos password after he is logged
     in to the system.
