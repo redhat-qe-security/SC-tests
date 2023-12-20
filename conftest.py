@@ -1,7 +1,9 @@
 import logging
 
+
 from SCAutolib.utils import load_user, ipa_factory, load_token, \
     ca_factory
+
 from fixtures import *
 from pathlib import Path
 
