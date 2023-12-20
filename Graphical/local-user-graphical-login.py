@@ -2,7 +2,7 @@
 This module contains tests for logging into GUI using GDM.
 Most of the tests are parametrized to test both
 optional and required smart card in authselect.
-Lock-on-removal option is not set as it is irelevent for present tests.
+Lock-on-removal option is not set as it is irrelevant for present tests.
 The tests within the module try logging in both using password and
 smart card with PIN. Both wrong password and wrong PIN are tested too.
 All tests depend on SCAutolib GUI module.
