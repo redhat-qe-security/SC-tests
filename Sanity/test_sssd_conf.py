@@ -95,9 +95,9 @@ def test_su_login_p11_uri_user_mismatch(user, uri, auth_stat, sssd):
         8. Open GDM login screen
         9. Insert card into the reader
     Expected result:
-        User is either prompted to enter password and authenticates succesfully
-        without SC or authentication fails depending on selected authselect
-        profile.
+        User is either prompted to enter password and authenticates
+        successfully without SC or authentication fails depending on selected
+        authselect profile.
     """
     with sssd(section="pam", key="p11_uri", value=uri) as sssd_conf:
         run(["ls", "-l", "/etc/sssd/sssd.conf"])
