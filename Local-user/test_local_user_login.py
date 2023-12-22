@@ -1,10 +1,12 @@
 """Note: as all tests are executed from root user, first login to any user
 do not require any credentials!
 """
+import pytest
 from SCAutolib.models.authselect import Authselect
 
 
-def test_su_login_with_sc(local_user, user_shell):
+@pytest.mark.parametrize("required", [True, False])
+def test_su_login_with_sc(local_user, user_shell, required):
     """Basic su login to the user with a smart card.
 
     Setup
@@ -38,7 +40,7 @@ def test_su_login_with_sc(local_user, user_shell):
         - User is successfully logged in
     """
 
-    with Authselect(required=False):
+    with Authselect(required=required):
         with local_user.card(insert=True):
             cmd = f'su {local_user.username} -c "whoami"'
             user_shell.sendline(cmd)
@@ -47,7 +49,8 @@ def test_su_login_with_sc(local_user, user_shell):
             user_shell.expect_exact(local_user.username)
 
 
-def test_su_login_with_sc_wrong(local_user, user_shell):
+@pytest.mark.parametrize("required", [True, False])
+def test_su_login_with_sc_wrong(local_user, user_shell, required):
     """Basic su login to the user with a smartcard when user inters wrong PIN.
 
     Setup
@@ -80,7 +83,7 @@ def test_su_login_with_sc_wrong(local_user, user_shell):
         - User inserts wrong PIN
         - User is not logged in and error message is written to the console
     """
-    with Authselect(required=False):
+    with Authselect(required=required):
         with local_user.card(insert=True):
             cmd = f'su {local_user.username} -c "whoami"'
             user_shell.sendline(cmd)
@@ -172,8 +175,10 @@ def test_su_login_without_sc(local_user, user_shell):
         user_shell.sendline(local_user.password)
         user_shell.expect_exact(local_user.username)
 
-
-def test_su_to_root(local_user, user_shell, root_user):
+@pytest.mark.parametrize(
+    "required,lock_on_removal", [(True, True), (True, False), (False, True), (False, False),]
+)
+def test_su_to_root(local_user, user_shell, root_user, required, lock_on_removal):
     """Test for smartcard login to the local user and then switching to root (su -).
 
     Setup
@@ -207,7 +212,7 @@ def test_su_to_root(local_user, user_shell, root_user):
         - User insert correct root password
         - User is switched to the root user
     """
-    with Authselect():
+    with Authselect(required=required, lock_on_removal=lock_on_removal):
         with local_user.card(insert=True):
             user_shell.sendline(f"su - {local_user.username}")
             user_shell.expect_exact(f"PIN for {local_user.username}:")
