@@ -32,7 +32,8 @@ def test_wrong_issuer_cert(local_user, sssd_db, user_shell, tmp_path):
     sssd_db.backup()
     sssd_db.path.unlink()
 
-    ca_factory(path = tmp_path.joinpath("ca"),
+    run(['mkdir', tmp_path.joinpath("ca")])
+    ca_factory(path=tmp_path.joinpath("ca"), create=True)
     run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
 
     with Authselect():
@@ -44,4 +45,5 @@ def test_wrong_issuer_cert(local_user, sssd_db, user_shell, tmp_path):
             user_shell.expect_exact(local_user.username)
 
     sssd_db.restore()
+    run(['rm', "-rf", tmp_path.joinpath("ca")])
     run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
