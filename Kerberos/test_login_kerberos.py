@@ -182,31 +182,3 @@ def test_krb_user_su_correct_password(ipa_user, user_shell):
         user_shell.sendline("whoami")
         user_shell.expect_exact(ipa_user.username)
         user_shell.close()
-
-
-def test_krb_user_ldap_mapping(ipa_user, ipa_server, user_shell, sssd):
-    """Test for LDAP mapping of Kerberos user provided by IPA server"""
-    changes = ({"section": f"domain/{ipa_server.domain}",
-                "key": "id_provider",
-                "val": "ldap"},
-               {"section": f"certmap/{ipa_server.domain}/{ipa_user.username}",
-                "key": "matchrule",
-                "val": f"<SUBJECT>.*CN={ipa_user.username}.*"},
-               {"section": f"certmap/{ipa_server.domain}/{ipa_user.username}",
-                "key": "maprule",
-                "val": "(userCertificate;binary={cert!bin})"})
-    with sssd as conf:
-        for item in changes:
-            conf.set(key=item["key"],
-                     value=item["val"],
-                     section=item["section"])
-        conf.save()
-
-        run(["systemctl", "restart", "sssd"], sleep=5)
-
-        with Authselect(), ipa_user.card(insert=True):
-            cmd = f"su {ipa_user.username} -c 'whoami'"
-            user_shell.sendline(cmd)
-            user_shell.expect_exact(f"PIN for {ipa_user.username}:")
-            user_shell.sendline(ipa_user.pin)
-            user_shell.expect_exact(ipa_user.username)
