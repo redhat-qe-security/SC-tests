@@ -15,12 +15,14 @@ local_user = None
 tokens = None
 
 
-def load_tokens(user, token_list):
+def load_tokens(user, token_list, update_sssd):
     log.info("Loading tokens")
     for index, token in enumerate(token_list):
-         log.debug("Loading %s. token", index)
-         setattr(user, f"card_{index}", load_token(token, update_sssd = True))
-         log.debug(f"Token %s is loaded", index)
+        log.debug("Loading %s. token", index)
+        setattr(
+            user, f"card_{index}", load_token(token, update_sssd = update_sssd)
+        )
+        log.debug(f"Token %s is loaded", index)
 
 
 def update_ca(user, token_list):
@@ -56,7 +58,7 @@ def pytest_configure(config):
             ipa_server=ipa_server)
         assert ipa_user.user_type == "ipa"
         log.debug("IPA user is loaded")
-        load_tokens(ipa_user, tokens)
+        load_tokens(ipa_user, tokens, config.getoption("keep_sssd"))
         ipa_user.card = ipa_user.card_0
         ipa_user.pin = ipa_user.card.pin
     if user_type in ["local", "all"]:
@@ -65,7 +67,7 @@ def pytest_configure(config):
             "local_username"))
         assert local_user.user_type == "local"
         log.debug("Local user is loaded")
-        load_tokens(local_user, tokens)
+        load_tokens(local_user, tokens, config.getoption("keep_sssd"))
         # backwards compatibility fix. Older tests expected one virtual card
         # as attribute of user - i.e. user.card and approached card this way.
         # As of now we expect user can have multiple cards, they are marked
@@ -112,6 +114,12 @@ def pytest_addoption(parser):
         default=[],
         dest="tokens",
         help="List of tokens to be prepared"
+    )
+    parser.addoption(
+        "--keep-sssd",
+        action="store_false",
+        dest="keep_sssd",
+        help="Prevents the forced change of sssd.conf"
     )
 
 
