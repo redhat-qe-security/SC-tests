@@ -1,5 +1,6 @@
 import pytest
-
+from time import sleep
+import pexpect
 
 def test_modutil_token_info(local_user, root_shell):
     """Check that p11-kit module shows smart card information with modutil
@@ -17,7 +18,7 @@ def test_pam_services_config(local_user, root_shell, sssd):
     works as expected for smart card authentication.
     GitHub issue: https://github.com/SSSD/sssd/issues/3967"""
     with open("/etc/pam.d/pam_cert_service", "w") as f:
-        f.write("auth\trequired\tpam_sss.so require_cert_auth")
+        f.write("auth\trequired\tpam_sss.so require_cert_auth\n")
     with sssd(section="pam", key="pam_p11_allowed_services", value="-su") as sssd_conf:
         with local_user.card(insert=False) as sc:
             cmd = "sssctl user-checks -a auth -s pam_cert_service " \
