@@ -136,12 +136,13 @@ def test_matchrule_defined_for_other_user(local_user, sssd, user_shell):
               value="<SUBJECT>.*CN=testuser.*") as sssd_file:
         # FIXME: this section should be replaced with library call for removing
         #  the section as soon as this functionality is implemented
-        with sssd_file.path.open("r+") as sources:
-            sourcesdata = sources.read()
-            sourcesdata = sourcesdata.replace(
+        with sssd_file.path.open("r") as fp:
+            new_context = fp.read()
+            new_context = new_context.replace(
                 f'[certmap/shadowutils/{local_user.username}]',
                 '[certmap/shadowutils/testuser]')
-            sources.write(sourcesdata)
+        with sssd_file.path.open("w") as fp:
+            fp.write(new_context)
         run(["systemctl", "restart", "sssd"])
 
         with Authselect(required=False), local_user.card(insert=True):
