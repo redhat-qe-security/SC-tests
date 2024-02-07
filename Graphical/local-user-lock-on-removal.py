@@ -59,7 +59,7 @@ def test_lock_on_removal(local_user, required):
             gui.kb_write(local_user.pin)
             gui.kb_send('enter', wait_time=20)
             # confirm that you are logged in
-            gui.assert_text('Activities')
+            gui.check_home_screen()
 
             # remove the card and wait for the screen to lock
             card.remove()
@@ -71,7 +71,7 @@ def test_lock_on_removal(local_user, required):
             gui.kb_send('enter', screenshot=False)
             # Confirm that the screen is locked
             # After the screen has been locked, there should be no Activities
-            gui.assert_no_text('Activities')
+            gui.check_home_screen(False)
             gui.assert_text('insert')
 
             card.insert()
@@ -80,7 +80,7 @@ def test_lock_on_removal(local_user, required):
             gui.kb_write(local_user.pin)
             gui.kb_send('enter', wait_time=20)
             # confirm that you are logged back in
-            gui.assert_text('Activities')
+            gui.check_home_screen()
 
 
 def test_lock_on_removal_password(local_user):
@@ -105,7 +105,7 @@ def test_lock_on_removal_password(local_user):
             gui.click_on(local_user.username)
             gui.kb_write(local_user.password)
             gui.kb_send('enter', wait_time=20)
-            gui.assert_text('Activities')
+            gui.check_home_screen()
 
             card.insert()
             sleep(10)
@@ -113,7 +113,7 @@ def test_lock_on_removal_password(local_user):
             sleep(10)
 
             # Screen should be unlocked
-            gui.assert_text('Activities')
+            gui.check_home_screen()
 
 
 @pytest.mark.parametrize("lock_on_removal", [(True), (False)])
@@ -146,7 +146,7 @@ def test_lockscreen_password(local_user, lock_on_removal):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password)
         gui.kb_send('enter', wait_time=20)
-        gui.assert_text('Activities')
+        gui.check_home_screen()
 
         card.insert()
         sleep(10)
@@ -162,9 +162,9 @@ def test_lockscreen_password(local_user, lock_on_removal):
         gui.kb_send('enter', screenshot=False)
         # Confirm that the screen is locked
         # After the screen has been locked, there should be no Activities
-        gui.assert_no_text('Activities')
+        gui.check_home_screen(False)
         gui.click_on('Password', check_difference=False)
         gui.kb_write(local_user.password)
         gui.kb_send('enter', wait_time=10)
         # confirm that you are logged back in
-        gui.assert_text('Activities')
+        gui.check_home_screen()
