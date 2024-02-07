@@ -9,6 +9,7 @@ import pytest
 
 from SCAutolib.models.file import File
 from SCAutolib.models.user import IPAUser
+from SCAutolib.models.card import VirtualCard
 from SCAutolib.utils import _gen_private_key
 from SCAutolib.exceptions import SCAutolibException
 from conftest import ipa_server
@@ -30,20 +31,30 @@ def _https_server(user_cert, user_key):
 
 @pytest.fixture
 def https_server(tmp_path):
+    https_user_card = VirtualCard({
+        "name": "virt-card-2",
+        "pin": "123456",
+        "cardholder": "https-server",
+        "CN": "https-server",
+        "UID": "",
+        "card_type": "virtual",
+        "ca_name": "ipa"
+    }, card_dir=tmp_path)
+
     https_user = IPAUser(ipa_server,
                          username="https-server",
-                         password="SECret.123",
-                         pin="123456",
-                         local=False,
-                         card_dir=tmp_path)
+                         password="SECret.123")
+
+    https_user_card.user = https_user
+
     try:
         https_user.add_user()
     except SCAutolibException:
         pass
     key = tmp_path.joinpath("https-server-key.pem")
     _gen_private_key(key)
-    https_user.key = key
-    csr = https_user.gen_csr()
+    https_user_card.key = key
+    csr = https_user_card.gen_csr()
     cert_out = tmp_path.joinpath("cert.pem")
     ipa_server.request_cert(csr, https_user.username, cert_out)
 
@@ -52,7 +63,7 @@ def https_server(tmp_path):
         f.write(f"127.0.0.1 {https_user.username}")
     try:
         server_t = threading.Thread(name='daemon_server',
-                                    args=(cert_out, https_user.key),
+                                    args=(cert_out, https_user_card.key),
                                     daemon=True,
                                     target=_https_server)
         server_t.start()
