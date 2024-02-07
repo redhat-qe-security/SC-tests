@@ -67,7 +67,7 @@ def test_login_with_sc(local_user, required):
             gui.kb_send('enter', wait_time=20)
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
-        gui.assert_text('Activities')
+        gui.check_home_screen()
 
 
 @pytest.mark.parametrize("required", [(True), (False)])
@@ -101,7 +101,7 @@ def test_login_with_sc_wrong(local_user, required):
             gui.kb_send('enter', wait_time=20)
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
-        gui.assert_no_text('Activities')
+        gui.check_home_screen(False)
         gui.assert_text('PIN')
 
 
@@ -128,7 +128,7 @@ def test_login_password(local_user):
         gui.kb_write(local_user.password)
         with assert_log(SECURE_LOG, expected_log):
             gui.kb_send('enter', wait_time=20)
-        gui.assert_text('Activities')
+        gui.check_home_screen()
 
 
 def test_login_password_wrong(local_user):
@@ -158,7 +158,7 @@ def test_login_password_wrong(local_user):
         with assert_log(SECURE_LOG, expected_log):
             gui.kb_send('enter', wait_time=20)
 
-        gui.assert_no_text('Activities')
+        gui.check_home_screen(False)
         gui.assert_text('Password')
 
 
@@ -199,4 +199,4 @@ def test_insert_card_prompt(local_user, lock_on_removal):
             gui.kb_send('enter', wait_time=20)
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
-        gui.assert_text('Activities')
+        gui.check_home_screen()
