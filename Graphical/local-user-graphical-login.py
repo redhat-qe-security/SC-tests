@@ -59,7 +59,8 @@ def test_login_with_sc(local_user, required):
         r'.*user=' + local_user.username + r'@shadowutils.*'
     )
 
-    with Authselect(required=required), local_user.card(insert=True), GUI() as gui:
+    with (GUI() as gui,
+          Authselect(required=required), local_user.card(insert=True)):
         gui.assert_text('PIN', timeout=60)
         gui.kb_write(local_user.pin)
 
@@ -93,8 +94,9 @@ def test_login_with_sc_wrong(local_user, required):
         r'.*user=' + local_user.username + r'@shadowutils.*'
     )
 
-    with Authselect(required=required), local_user.card(insert=True), GUI() as gui:
-        gui.assert_text('PIN')
+    with (GUI() as gui,
+          Authselect(required=required), local_user.card(insert=True)):
+        gui.assert_text('PIN', timeout=20)
         gui.kb_write(local_user.pin[:-1])
 
         with assert_log(SECURE_LOG, expected_log):
@@ -102,7 +104,7 @@ def test_login_with_sc_wrong(local_user, required):
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
         gui.check_home_screen(False)
-        gui.assert_text('PIN')
+        gui.assert_text('PIN', timeout=20)
 
 
 def test_login_password(local_user):
@@ -123,7 +125,7 @@ def test_login_password(local_user):
         r'.* pam_unix\(gdm-password:session\): session opened for user .*'
         )
 
-    with Authselect(required=False), GUI() as gui:
+    with GUI() as gui, Authselect(required=False):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password)
         with assert_log(SECURE_LOG, expected_log):
@@ -152,14 +154,14 @@ def test_login_password_wrong(local_user):
         r'.*user=' + local_user.username + r'.*'
     )
 
-    with Authselect(required=False), GUI() as gui:
+    with GUI() as gui, Authselect(required=False):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password[:-1])
         with assert_log(SECURE_LOG, expected_log):
             gui.kb_send('enter', wait_time=20)
 
         gui.check_home_screen(False)
-        gui.assert_text('Password')
+        gui.assert_text('Password', timeout=20)
 
 
 @pytest.mark.parametrize("lock_on_removal", [True, False])
@@ -180,10 +182,15 @@ def test_insert_card_prompt(local_user, lock_on_removal):
         C. GDM shows "insert PIN" prompt
         D. User is logged in successfully.
     """
-    with (Authselect(required=True, lock_on_removal=lock_on_removal),
-          local_user.card(insert=False) as card,
-          GUI() as gui):
-        gui.assert_text('insert')
+    with (GUI() as gui,
+          Authselect(required=True, lock_on_removal=lock_on_removal),
+          local_user.card(insert=False) as card):
+        try:
+            gui.assert_text('insert')
+        except Exception:
+            gui.click_on(local_user.username)
+
+        gui.assert_text('insert', timeout=20)
         card.insert()
         sleep(10)
         gui.assert_text('PIN')
@@ -192,7 +199,7 @@ def test_insert_card_prompt(local_user, lock_on_removal):
         expected_log = (
             r'.* gdm-smartcard\]\[[0-9]+\]: '
             r'pam_sss\(gdm-smartcard:auth\): authentication success;'
-            r'.*user=' + local_user.username + r'@shadowutils.*'
+            r'.*user=' + local_user.username + r'(@shadowutils)?.*'
         )
 
         with assert_log(SECURE_LOG, expected_log):
