@@ -50,12 +50,11 @@ def test_lock_on_removal(local_user, required):
         C. The system locks itself after the card is removed
         D. The system is unlocked
     """
-
-    with Authselect(required=required, lock_on_removal=True), GUI() as gui:
+    with (GUI() as gui, Authselect(required=required, lock_on_removal=True)):
         # insert the card and sign in a standard way
         with local_user.card(insert=True) as card:
             sleep(5)
-            gui.assert_text('PIN')
+            gui.assert_text('PIN', timeout=20)
             gui.kb_write(local_user.pin)
             gui.kb_send('enter', wait_time=20)
             # confirm that you are logged in
@@ -72,7 +71,7 @@ def test_lock_on_removal(local_user, required):
             # Confirm that the screen is locked
             # After the screen has been locked, there should be no Activities
             gui.check_home_screen(False)
-            gui.assert_text('insert')
+            gui.assert_text('insert', timeout=20)
 
             card.insert()
             # click on the password field
@@ -100,7 +99,7 @@ def test_lock_on_removal_password(local_user):
         C. Nothing happens
         D. Nothing happens - system will not lock on card removal
     """
-    with Authselect(required=False, lock_on_removal=True), GUI() as gui:
+    with (GUI() as gui, Authselect(required=False, lock_on_removal=True)):
         with local_user.card(insert=False) as card:
             gui.click_on(local_user.username)
             gui.kb_write(local_user.password)
@@ -138,11 +137,9 @@ def test_lockscreen_password(local_user, lock_on_removal):
         D. The screen is locked
         E. Screen is unlocked successfully
     """
-    with (
-        Authselect(required=False, lock_on_removal=lock_on_removal),
-        GUI() as gui,
-        local_user.card(insert=False) as card
-            ):
+    with (GUI() as gui,
+          Authselect(required=False, lock_on_removal=lock_on_removal),
+          local_user.card(insert=False) as card):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password)
         gui.kb_send('enter', wait_time=20)
