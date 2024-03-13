@@ -27,7 +27,7 @@ and share the following setup steps:
 
 from SCAutolib.models.authselect import Authselect
 from SCAutolib.models.gui import GUI, keyboard
-from time import sleep
+from time import sleep, time
 import pytest
 
 
@@ -50,16 +50,19 @@ def test_lock_on_removal(local_user, required):
         C. The system locks itself after the card is removed
         D. The system is unlocked
     """
+    # Directory name for the gui to create the html file
+    res_dir = str(int(time())) + "_lock_on_removal"
 
-    with Authselect(required=required, lock_on_removal=True), GUI() as gui:
+    with (GUI(res_dir_name=res_dir) as gui,
+          Authselect(required=required, lock_on_removal=True)):
         # insert the card and sign in a standard way
         with local_user.card(insert=True) as card:
             sleep(5)
-            gui.assert_text('PIN')
+            gui.assert_text('PIN', timeout=20)
             gui.kb_write(local_user.pin)
             gui.kb_send('enter', wait_time=20)
             # confirm that you are logged in
-            gui.assert_text('Activities')
+            gui.assert_text('Activities', timeout=20)
 
             # remove the card and wait for the screen to lock
             card.remove()
@@ -72,7 +75,7 @@ def test_lock_on_removal(local_user, required):
             # Confirm that the screen is locked
             # After the screen has been locked, there should be no Activities
             gui.assert_no_text('Activities')
-            gui.assert_text('insert')
+            gui.assert_text('insert', timeout=20)
 
             card.insert()
             # click on the password field
@@ -80,7 +83,7 @@ def test_lock_on_removal(local_user, required):
             gui.kb_write(local_user.pin)
             gui.kb_send('enter', wait_time=20)
             # confirm that you are logged back in
-            gui.assert_text('Activities')
+            gui.assert_text('Activities', timeout=20)
 
 
 def test_lock_on_removal_password(local_user):
@@ -100,12 +103,16 @@ def test_lock_on_removal_password(local_user):
         C. Nothing happens
         D. Nothing happens - system will not lock on card removal
     """
-    with Authselect(required=False, lock_on_removal=True), GUI() as gui:
+    # Directory name for the gui to create the html file
+    res_dir = str(int(time())) + "_lock_on_removal_password"
+
+    with (GUI(res_dir_name=res_dir) as gui,
+          Authselect(required=False, lock_on_removal=True)):
         with local_user.card(insert=False) as card:
             gui.click_on(local_user.username)
             gui.kb_write(local_user.password)
             gui.kb_send('enter', wait_time=20)
-            gui.assert_text('Activities')
+            gui.assert_text('Activities', timeout=20)
 
             card.insert()
             sleep(10)
@@ -113,7 +120,7 @@ def test_lock_on_removal_password(local_user):
             sleep(10)
 
             # Screen should be unlocked
-            gui.assert_text('Activities')
+            gui.assert_text('Activities', timeout=20)
 
 
 @pytest.mark.parametrize("lock_on_removal", [(True), (False)])
@@ -138,15 +145,16 @@ def test_lockscreen_password(local_user, lock_on_removal):
         D. The screen is locked
         E. Screen is unlocked successfully
     """
-    with (
-        Authselect(required=False, lock_on_removal=lock_on_removal),
-        GUI() as gui,
-        local_user.card(insert=False) as card
-            ):
+    # Directory name for the gui to create the html file
+    res_dir = str(int(time())) + "_lockscreen_password"
+
+    with (GUI(res_dir_name=res_dir) as gui,
+          Authselect(required=False, lock_on_removal=lock_on_removal),
+          local_user.card(insert=False) as card):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password)
         gui.kb_send('enter', wait_time=20)
-        gui.assert_text('Activities')
+        gui.assert_text('Activities', timeout=20)
 
         card.insert()
         sleep(10)
@@ -167,4 +175,4 @@ def test_lockscreen_password(local_user, lock_on_removal):
         gui.kb_write(local_user.password)
         gui.kb_send('enter', wait_time=10)
         # confirm that you are logged back in
-        gui.assert_text('Activities')
+        gui.assert_text('Activities', timeout=20)

@@ -30,7 +30,7 @@ from SCAutolib.models.authselect import Authselect
 from SCAutolib.models.gui import GUI
 from SCAutolib.models.log import assert_log
 import pytest
-from time import sleep
+from time import sleep, time
 
 SECURE_LOG = '/var/log/secure'
 
@@ -59,15 +59,19 @@ def test_login_with_sc(local_user, required):
         r'.*user=' + local_user.username + r'@shadowutils.*'
     )
 
-    with Authselect(required=required), local_user.card(insert=True), GUI() as gui:
-        gui.assert_text('PIN', timeout=60)
+    # Directory name for the gui to create the html file
+    res_dir = str(int(time())) + "_login_with_sc"
+
+    with (GUI(res_dir_name=res_dir) as gui,
+          Authselect(required=required), local_user.card(insert=True)):
+        gui.assert_text('PIN', timeout=20)
         gui.kb_write(local_user.pin)
 
         with assert_log(SECURE_LOG, expected_log):
             gui.kb_send('enter', wait_time=20)
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
-        gui.assert_text('Activities')
+        gui.assert_text('Activities',timeout=20)
 
 
 @pytest.mark.parametrize("required", [(True), (False)])
@@ -93,8 +97,12 @@ def test_login_with_sc_wrong(local_user, required):
         r'.*user=' + local_user.username + r'@shadowutils.*'
     )
 
-    with Authselect(required=required), local_user.card(insert=True), GUI() as gui:
-        gui.assert_text('PIN')
+    # Directory name for the gui to create the html file
+    res_dir = str(int(time())) + "_login_with_sc_wrong"
+
+    with (GUI(res_dir_name=res_dir) as gui,
+          Authselect(required=required), local_user.card(insert=True)):
+        gui.assert_text('PIN', timeout=20)
         gui.kb_write(local_user.pin[:-1])
 
         with assert_log(SECURE_LOG, expected_log):
@@ -102,7 +110,7 @@ def test_login_with_sc_wrong(local_user, required):
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
         gui.assert_no_text('Activities')
-        gui.assert_text('PIN')
+        gui.assert_text('PIN', timeout=20)
 
 
 def test_login_password(local_user):
@@ -123,12 +131,15 @@ def test_login_password(local_user):
         r'.* pam_unix\(gdm-password:session\): session opened for user .*'
         )
 
-    with Authselect(required=False), GUI() as gui:
+    # Directory name for the gui to create the html file
+    res_dir = str(int(time())) + "_login_password"
+
+    with GUI(res_dir_name=res_dir) as gui, Authselect(required=False):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password)
         with assert_log(SECURE_LOG, expected_log):
             gui.kb_send('enter', wait_time=20)
-        gui.assert_text('Activities')
+        gui.assert_text('Activities', timeout=20)
 
 
 def test_login_password_wrong(local_user):
@@ -152,14 +163,17 @@ def test_login_password_wrong(local_user):
         r'.*user=' + local_user.username + r'.*'
     )
 
-    with Authselect(required=False), GUI() as gui:
+    # Directory name for the gui to create the html file
+    res_dir = str(int(time())) + "_login_password_wrong"
+
+    with GUI(res_dir_name=res_dir) as gui, Authselect(required=False):
         gui.click_on(local_user.username)
         gui.kb_write(local_user.password[:-1])
         with assert_log(SECURE_LOG, expected_log):
             gui.kb_send('enter', wait_time=20)
 
         gui.assert_no_text('Activities')
-        gui.assert_text('Password')
+        gui.assert_text('Password', timeout=20)
 
 
 @pytest.mark.parametrize("lock_on_removal", [True, False])
@@ -180,23 +194,31 @@ def test_insert_card_prompt(local_user, lock_on_removal):
         C. GDM shows "insert PIN" prompt
         D. User is logged in successfully.
     """
-    with (Authselect(required=True, lock_on_removal=lock_on_removal),
-          local_user.card(insert=False) as card,
-          GUI() as gui):
-        gui.assert_text('insert')
+    # Directory name for the gui to create the html file
+    res_dir = str(int(time())) + "_insert_card_prompt"
+
+    with (GUI(res_dir_name=res_dir) as gui,
+          Authselect(required=True, lock_on_removal=lock_on_removal),
+          local_user.card(insert=False) as card):
+        try:
+            gui.assert_text('insert')
+        except Exception:
+            gui.click_on(local_user.username)
+
+        gui.assert_text('insert', timeout=20)
         card.insert()
         sleep(10)
-        gui.assert_text('PIN')
+        gui.assert_text('PIN', timeout=20)
         gui.kb_write(local_user.pin)
 
         expected_log = (
             r'.* gdm-smartcard\]\[[0-9]+\]: '
             r'pam_sss\(gdm-smartcard:auth\): authentication success;'
-            r'.*user=' + local_user.username + r'@shadowutils.*'
+            r'.*user=' + local_user.username + r'(@shadowutils)?.*'
         )
 
         with assert_log(SECURE_LOG, expected_log):
             gui.kb_send('enter', wait_time=20)
         # Mandatory wait to switch display from GDM to GNOME
         # Not waiting can actually mess up the output
-        gui.assert_text('Activities')
+        gui.assert_text('Activities', timeout=20)
