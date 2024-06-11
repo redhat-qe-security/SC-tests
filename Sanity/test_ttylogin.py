@@ -14,6 +14,7 @@ import pexpect
 import pytest
 
 from SCAutolib.models.authselect import Authselect
+from SCAutolib.isDistro import isDistro
 
 
 def login_shell_factory(username):
@@ -304,7 +305,10 @@ def test_login_local_user_passwd(user, required, lock_on_removal):
             login_shell.sendline(user.pin)
             login_shell.expect([user.username])
             login_shell.sendline("passwd")
-            login_shell.expect_exact(f"Changing password for user {user.username}.")
+            if isDistro(['rhel', 'centos'], '>=10') or isDistro('fedora', '>=40'):
+                login_shell.expect_exact(f"Current password")
+            else:
+                login_shell.expect_exact(f"Changing password for user {user.username}.")
 
 @pytest.mark.parametrize(
     "required,lock_on_removal", [(True, True), (True, False), (False, True), (False, False),]
