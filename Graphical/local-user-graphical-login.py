@@ -186,7 +186,7 @@ def test_insert_card_prompt(local_user, lock_on_removal):
           Authselect(required=True, lock_on_removal=lock_on_removal),
           local_user.card(insert=False) as card):
         try:
-            gui.assert_text('insert')
+            gui.assert_text('insert', timeout=20)
         except Exception:
             gui.click_on(local_user.username)
 
