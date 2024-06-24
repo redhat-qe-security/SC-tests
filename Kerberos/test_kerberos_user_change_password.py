@@ -2,6 +2,7 @@ import pytest
 
 import conftest
 from SCAutolib.models.authselect import Authselect
+from SCAutolib.isDistro import isDistro
 
 
 @pytest.mark.parametrize("required,insert,expect,secret",
@@ -66,4 +67,7 @@ def test_kerberos_change_passwd(ipa_user, user_shell, required, insert, expect, 
             user_shell.sendline(cmd)
             user_shell.expect_exact(expect)
             user_shell.sendline(secret)
-            user_shell.expect_exact(f"Changing password for user {ipa_user.username}.")
+            if isDistro(['rhel', 'centos'], '>=10') or isDistro('fedora', '>=40'):
+                user_shell.expect_exact(f"Current password")
+            else:
+                user_shell.expect_exact(f"Changing password for user {ipa_user.username}.")

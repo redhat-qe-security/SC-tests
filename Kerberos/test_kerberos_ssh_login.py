@@ -4,6 +4,7 @@ import pexpect
 import pytest
 
 from SCAutolib.models.authselect import Authselect
+from SCAutolib.isDistro import isDistro
 
 
 def test_krb_user_ssh(ipa_user, user_shell):
@@ -65,7 +66,10 @@ def test_krb_change_passwd_ssh(ipa_user, user_shell, ipa_login):
         user_shell.sendline(f"whoami")
         user_shell.expect_exact(ipa_user.username)
         user_shell.sendline(f"passwd")
-        user_shell.expect_exact(f"Changing password for user {ipa_user.username}.")
+        if isDistro(['rhel', 'centos'], '>=10') or isDistro('fedora', '>=40'):
+            user_shell.expect_exact(f"Current password")
+        else:
+            user_shell.expect_exact(f"Changing password for user {ipa_user.username}.")
 
 
 # Login with kerberos user using a smart card and then check if we can still ssh into the system
