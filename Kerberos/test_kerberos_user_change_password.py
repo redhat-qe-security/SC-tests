@@ -68,6 +68,6 @@ def test_kerberos_change_passwd(ipa_user, user_shell, required, insert, expect, 
             user_shell.expect_exact(expect)
             user_shell.sendline(secret)
             if isDistro(['rhel', 'centos'], '>=10') or isDistro('fedora', '>=40'):
-                user_shell.expect_exact(f"Current password")
+                user_shell.expect(r"[cC]urrent [pP]assword")
             else:
                 user_shell.expect_exact(f"Changing password for user {ipa_user.username}.")

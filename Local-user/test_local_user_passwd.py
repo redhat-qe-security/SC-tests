@@ -47,6 +47,6 @@ def test_change_local_user_passwd(local_user, user_shell, required, lock_on_remo
             user_shell.expect_exact(f"PIN for {local_user.username}:")
             user_shell.sendline(local_user.pin)
             if isDistro(['rhel', 'centos'], '>=10') or isDistro('fedora', '>=40'):
-                user_shell.expect_exact(f"Current password")
+                user_shell.expect(r"[cC]urrent [pP]assword")
             else:
                 user_shell.expect_exact(f"Changing password for user {local_user.username}.")
