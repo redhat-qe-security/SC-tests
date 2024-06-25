@@ -67,7 +67,7 @@ def test_krb_change_passwd_ssh(ipa_user, user_shell, ipa_login):
         user_shell.expect_exact(ipa_user.username)
         user_shell.sendline(f"passwd")
         if isDistro(['rhel', 'centos'], '>=10') or isDistro('fedora', '>=40'):
-            user_shell.expect_exact(f"Current password")
+            user_shell.expect(r"[cC]urrent [pP]assword")
         else:
             user_shell.expect_exact(f"Changing password for user {ipa_user.username}.")
 
