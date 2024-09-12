@@ -75,7 +75,7 @@ def test_lock_on_removal(local_user, required):
 
             card.insert()
             # click on the password field
-            gui.click_on('PIN')
+            gui.click_on('PIN', check_difference=False)
             gui.kb_write(local_user.pin)
             gui.kb_send('enter', wait_time=20)
             # confirm that you are logged back in
