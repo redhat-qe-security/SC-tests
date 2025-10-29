@@ -5,7 +5,7 @@ import logging
 
 from SCAutolib import run
 from SCAutolib.models.file import SSSDConf
-from SCAutolib.utils import load_user
+from SCAutolib.models.user import User
 
 
 @pytest.fixture(scope="function")
@@ -26,7 +26,7 @@ def root_shell():
 @pytest.fixture(scope="function")
 def allow_sudo_commands(ipa_user):
     """
-    Modifying the IPA server's sudo rules to allow the test user to 
+    Modifying the IPA server's sudo rules to allow the test user to
     run sudo commands and restore the original state afterward.
     """
     logger = logging.getLogger()
@@ -44,12 +44,12 @@ def allow_sudo_commands(ipa_user):
 
 @pytest.fixture(scope="session")
 def root_user():
-    return load_user("root")
+    return User.load(username="root")
 
 
 @pytest.fixture(scope="session")
 def base_user():
-    return load_user("base-user")
+    return User.load(username="base-user")
 
 
 @pytest.fixture(scope="session")

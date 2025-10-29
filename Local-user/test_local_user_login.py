@@ -2,8 +2,9 @@
 do not require any credentials!
 """
 import pytest
+import pexpect
+from conftest import check_multicert
 from SCAutolib.models.authselect import Authselect
-
 
 @pytest.mark.parametrize("required", [True, False])
 def test_su_login_with_sc(local_user, user_shell, required):
@@ -41,12 +42,14 @@ def test_su_login_with_sc(local_user, user_shell, required):
     """
 
     with Authselect(required=required):
-        with local_user.card(insert=True):
-            cmd = f'su {local_user.username} -c "whoami"'
-            user_shell.sendline(cmd)
-            user_shell.expect_exact(f"PIN for {local_user.username}:")
-            user_shell.sendline(local_user.pin)
-            user_shell.expect_exact(local_user.username)
+        for i in range(local_user.total_cards):
+            with getattr(local_user, f"card_{i}")(insert=True) as sc:
+                cmd = f'su {local_user.username} -c "whoami"'
+                user_shell.sendline(cmd)
+                check_multicert(shell=user_shell)
+                user_shell.expect(f"PIN for .*{sc.label}.*:")
+                user_shell.sendline(sc.pin)
+                user_shell.expect_exact(local_user.username)
 
 
 @pytest.mark.parametrize("required", [True, False])
@@ -84,12 +87,14 @@ def test_su_login_with_sc_wrong(local_user, user_shell, required):
         - User is not logged in and error message is written to the console
     """
     with Authselect(required=required):
-        with local_user.card(insert=True):
-            cmd = f'su {local_user.username} -c "whoami"'
-            user_shell.sendline(cmd)
-            user_shell.expect_exact(f"PIN for {local_user.username}:")
-            user_shell.sendline("wrong")
-            user_shell.expect(f"su: Authentication failure")
+        for i in range(local_user.total_cards):
+            with getattr(local_user, f"card_{i}")(insert=True) as sc:
+                cmd = f'su {local_user.username} -c "whoami"'
+                user_shell.sendline(cmd)
+                check_multicert(shell=user_shell)
+                user_shell.expect(f"PIN for .*{sc.label}.*:")
+                user_shell.sendline(sc.pin + "extra")
+                user_shell.expect(f"su: Authentication failure")
 
 
 def test_gdm_login_sc_required(local_user, root_shell):
@@ -128,14 +133,18 @@ def test_gdm_login_sc_required(local_user, root_shell):
 
     """
     with Authselect(required=True):
-        with local_user.card as sc:
-            cmd = f'sssctl user-checks -s gdm-smartcard {local_user.username} -a auth'
-            root_shell.sendline(cmd)
-            root_shell.expect_exact("Please insert smart card")
-            sc.insert()
-            root_shell.expect_exact(f"PIN for {local_user.username}")
-            root_shell.sendline(local_user.pin)
-            root_shell.expect("pam_authenticate.*Success")
+        for i in range(local_user.total_cards):
+            with getattr(local_user, f"card_{i}") as sc:
+                cmd = f'sssctl user-checks -s gdm-smartcard {local_user.username} -a auth'
+                root_shell.sendline(cmd)
+                root_shell.expect_exact("Please insert smart card")
+
+                sc.insert()
+
+                check_multicert(shell=root_shell)
+                root_shell.expect(f"PIN for .*{sc.label}.*:")
+                root_shell.sendline(sc.pin)
+                root_shell.expect("pam_authenticate.*Success")
 
 
 def test_su_login_without_sc(local_user, user_shell):
@@ -213,14 +222,16 @@ def test_su_to_root(local_user, user_shell, root_user, required, lock_on_removal
         - User is switched to the root user
     """
     with Authselect(required=required, lock_on_removal=lock_on_removal):
-        with local_user.card(insert=True):
-            user_shell.sendline(f"su - {local_user.username}")
-            user_shell.expect_exact(f"PIN for {local_user.username}:")
-            user_shell.sendline(local_user.pin)
-            user_shell.expect_exact(local_user.username)
-            user_shell.sendline("whoami")
-            user_shell.expect_exact(local_user.username)
-            user_shell.sendline('su - root -c "whoami"')
-            user_shell.expect_exact("Password:")
-            user_shell.sendline(root_user.password)
-            user_shell.expect_exact("root")
+        for i in range(local_user.total_cards):
+            with getattr(local_user, f"card_{i}")(insert=True) as sc:
+                user_shell.sendline(f"su - {local_user.username}")
+                check_multicert(shell=user_shell)
+                user_shell.expect(f"PIN for .*{sc.label}.*:")
+                user_shell.sendline(sc.pin)
+                user_shell.expect_exact(local_user.username)
+                user_shell.sendline("whoami")
+                user_shell.expect_exact(local_user.username)
+                user_shell.sendline('su - root -c "whoami"')
+                user_shell.expect_exact("Password:")
+                user_shell.sendline(root_user.password)
+                user_shell.expect_exact("root")
