@@ -33,7 +33,7 @@ def test_wrong_issuer_cert(local_user, sssd_db, user_shell, tmp_path):
     sssd_db.path.unlink()
 
     run(['mkdir', tmp_path.joinpath("ca")])
-    ca = BaseCA.factory(path=tmp_path.joinpath("ca"), create=True)
+    BaseCA.factory(path=tmp_path.joinpath("ca"), create=True)
     run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
 
     with Authselect():

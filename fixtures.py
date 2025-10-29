@@ -44,12 +44,12 @@ def allow_sudo_commands(ipa_user):
 
 @pytest.fixture(scope="session")
 def root_user():
-    return User.load(username = "root")
+    return User.load(username="root")
 
 
 @pytest.fixture(scope="session")
 def base_user():
-    return User.load(username = "base-user")
+    return User.load(username="base-user")
 
 
 @pytest.fixture(scope="session")
