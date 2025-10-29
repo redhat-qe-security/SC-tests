@@ -1,8 +1,9 @@
 import logging
 
 
-from SCAutolib.utils import load_user, ipa_factory, load_token, \
-    ca_factory
+from SCAutolib.models.CA import BaseCA, IPAServerCA
+from SCAutolib.models.card import Card
+from SCAutolib.models.user import User
 
 from fixtures import *
 from pathlib import Path
@@ -13,26 +14,33 @@ ipa_user = None
 ipa_server = None
 local_user = None
 tokens = None
+multicert = None
 
 
 def load_tokens(user, token_list, update_sssd):
     log.info("Loading tokens")
+    user.total_cards = len(token_list)
     for index, token in enumerate(token_list):
         log.debug("Loading %s. token", index)
         setattr(
-            user, f"card_{index}", load_token(token, update_sssd = update_sssd)
+            user, f"card_{index}", Card.load(
+                card_name = token, update_sssd = update_sssd)
         )
         log.debug(f"Token %s is loaded", index)
 
 
-def update_ca(user, token_list):
-    log.info("Loading local CA")
-    for index, token in enumerate(token_list):
-        card_name = f"card_{index}"
-        card = getattr(user, card_name, None)
-        ca = ca_factory(ca_name=card.ca_name)
-        ca.update_ca_db()
-    log.debug("CA database is updated")
+def check_multicert(shell = None, gui = None):
+    global multicert
+    if multicert:
+        # For if the card has multiple certs and you need to choose
+        if shell:
+            shell.expect_exact(f"select a certificate")
+            shell.sendline(multicert)
+        if gui:
+            gui.assert_text('select a certificate', timeout=10)
+            gui.click_on("Certificate for", click_on_match=int(multicert))
+        return True
+    return False
 
 
 def pytest_configure(config):
@@ -40,8 +48,10 @@ def pytest_configure(config):
     global ipa_server
     global local_user
     global tokens
+    global multicert
     user_type = config.getoption("user_type")
     tokens = config.getoption("tokens")
+    multicert = config.getoption("select_cert")
 
     # workaround to set default token as parser.addoption defining tokens
     # is a list that needs to be empty by default
@@ -50,24 +60,24 @@ def pytest_configure(config):
 
     if user_type in ["ipa", "all"]:
         log.debug("Loading IPA client")
-        ipa_server = ipa_factory()
+        ipa_server = IPAServerCA.factory()
         log.debug("IPA client is loaded")
         log.debug("Loading IPA user")
-        ipa_user = load_user(
-            config.getoption("ipa_username"),
+        ipa_user = User.load(
+            username = config.getoption("ipa_username"),
             ipa_server=ipa_server)
         assert ipa_user.user_type == "ipa"
         log.debug("IPA user is loaded")
-        load_tokens(ipa_user, tokens, config.getoption("keep_sssd"))
+        load_tokens(ipa_user, tokens, config.getoption("update_sssd"))
         ipa_user.card = ipa_user.card_0
         ipa_user.pin = ipa_user.card.pin
     if user_type in ["local", "all"]:
         log.debug("Loading local user")
-        local_user = load_user(config.getoption(
+        local_user = User.load(username = config.getoption(
             "local_username"))
         assert local_user.user_type == "local"
         log.debug("Local user is loaded")
-        load_tokens(local_user, tokens, config.getoption("keep_sssd"))
+        load_tokens(local_user, tokens, config.getoption("update_sssd"))
         # backwards compatibility fix. Older tests expected one virtual card
         # as attribute of user - i.e. user.card and approached card this way.
         # As of now we expect user can have multiple cards, they are marked
@@ -78,8 +88,6 @@ def pytest_configure(config):
         # pin used to be user attribute. as we can currently have multiple cards
         # pin was moved to card. For backwards compatibility:
         local_user.pin = local_user.card.pin
-
-        update_ca(local_user, tokens)
 
 
 def pytest_addoption(parser):
@@ -116,10 +124,20 @@ def pytest_addoption(parser):
         help="List of tokens to be prepared"
     )
     parser.addoption(
-        "--keep-sssd",
-        action="store_false",
-        dest="keep_sssd",
-        help="Prevents the forced change of sssd.conf"
+        "--update-sssd",
+        action="store_true",
+        default=False,
+        dest="update_sssd",
+        help="Force change of sssd.conf"
+    )
+    parser.addoption(
+        "--select-cert",
+        action="store",
+        default=None,
+        dest="select_cert",
+        help="Use if card has multiple certs stored. "
+             "Provide which cert to use. "
+             "Note that this selection will apply to all tokens!"
     )
 
 
@@ -161,3 +179,5 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("ipa_server", [ipa_server])
     if "tokens" in metafunc.fixturenames:
         metafunc.parametrize("tokens", [tokens])
+    if "check_multicert" in metafunc.fixturenames:
+        metafunc.parametrize("check_multicert", [check_multicert])

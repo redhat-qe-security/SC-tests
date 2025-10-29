@@ -28,6 +28,7 @@ and share the following setup steps:
 from SCAutolib.models.authselect import Authselect
 from SCAutolib.models.gui import GUI, keyboard
 from time import sleep
+from conftest import check_multicert
 import pytest
 
 
@@ -50,36 +51,39 @@ def test_lock_on_removal(local_user, required):
         C. The system locks itself after the card is removed
         D. The system is unlocked
     """
-    with (GUI() as gui, Authselect(required=required, lock_on_removal=True)):
+    with (GUI(wait_time=10) as gui,
+          Authselect(required=required, lock_on_removal=True)):
         # insert the card and sign in a standard way
-        with local_user.card(insert=True) as card:
-            sleep(5)
-            gui.assert_text('PIN', timeout=20)
-            gui.kb_write(local_user.pin)
-            gui.kb_send('enter', wait_time=20)
-            # confirm that you are logged in
-            gui.check_home_screen()
 
-            # remove the card and wait for the screen to lock
-            card.remove()
-            sleep(5)
-            # Locking the screen in GNOME apparently does not generate any log.
-            # This could be checked by monitoring D-Bus signals
+        for i in range(local_user.total_cards):
+            with getattr(local_user, f"card_{i}")(insert=True) as sc:
+                sleep(5)
+                check_multicert(gui=gui)
+                gui.assert_text('PIN', timeout=20)
+                gui.kb_write(sc.pin)
+                # confirm that you are logged in
+                gui.check_home_screen()
 
-            # Wake up the black screen by pressing enter
-            gui.kb_send('enter', screenshot=False)
-            # Confirm that the screen is locked
-            # After the screen has been locked, there should be no Activities
-            gui.check_home_screen(False)
-            gui.assert_text('insert', timeout=20)
+                # remove the card and wait for the screen to lock
+                sc.remove()
+                sleep(5)
+                # Locking the screen in GNOME apparently does not generate any log.
+                # This could be checked by monitoring D-Bus signals
 
-            card.insert()
-            # click on the password field
-            gui.click_on('PIN')
-            gui.kb_write(local_user.pin)
-            gui.kb_send('enter', wait_time=20)
-            # confirm that you are logged back in
-            gui.check_home_screen()
+                # Wake up the black screen by pressing enter
+                gui.kb_send('enter', screenshot=False)
+                # Confirm that the screen is locked
+                # After the screen has been locked, there should be no Activities
+                gui.check_home_screen(False)
+                gui.assert_text('insert', timeout=20)
+
+                sc.insert()
+                check_multicert(gui=gui)
+                # click on the password field
+                gui.click_on('PIN')
+                gui.kb_write(sc.pin)
+                # confirm that you are logged back in
+                gui.check_home_screen()
 
 
 def test_lock_on_removal_password(local_user):
@@ -99,24 +103,25 @@ def test_lock_on_removal_password(local_user):
         C. Nothing happens
         D. Nothing happens - system will not lock on card removal
     """
-    with (GUI() as gui, Authselect(required=False, lock_on_removal=True)):
-        with local_user.card(insert=False) as card:
-            gui.click_on(local_user.username)
-            gui.kb_write(local_user.password)
-            gui.kb_send('enter', wait_time=20)
-            gui.check_home_screen()
+    with (GUI(wait_time=10) as gui,
+          Authselect(required=False, lock_on_removal=True)):
+        for i in range(local_user.total_cards):
+            with getattr(local_user, f"card_{i}")() as sc:
+                gui.click_on(local_user.username)
+                gui.kb_write(local_user.password)
+                gui.check_home_screen()
 
-            card.insert()
-            sleep(10)
-            card.remove()
-            sleep(10)
+                sc.insert()
+                sleep(10)
+                sc.remove()
+                sleep(10)
 
-            # Screen should be unlocked
-            gui.check_home_screen()
+                # Screen should be unlocked
+                gui.check_home_screen()
 
 
 @pytest.mark.parametrize("lock_on_removal", [(True), (False)])
-def test_lockscreen_password(local_user, lock_on_removal):
+def test_lockscreen_password(local_user, check_multicert, lock_on_removal):
     """Local user unlocks screen using password, even if the smart card is
         inserted (after the password login). Screen unlocking requires the same
         method (PIN vs password) as was used for login.
@@ -137,31 +142,30 @@ def test_lockscreen_password(local_user, lock_on_removal):
         D. The screen is locked
         E. Screen is unlocked successfully
     """
-    with (GUI() as gui,
-          Authselect(required=False, lock_on_removal=lock_on_removal),
-          local_user.card(insert=False) as card):
-        gui.click_on(local_user.username)
-        gui.kb_write(local_user.password)
-        gui.kb_send('enter', wait_time=20)
-        gui.check_home_screen()
+    with (GUI(wait_time=10) as gui,
+          Authselect(required=False, lock_on_removal=lock_on_removal)):
+        for i in range(local_user.total_cards):
+            with getattr(local_user, f"card_{i}")() as sc:
+                gui.click_on(local_user.username)
+                gui.kb_write(local_user.password)
+                gui.check_home_screen()
 
-        card.insert()
-        sleep(10)
-        # press shortcut to lock the screen
-        # keyboard.send('windows+l') cannot be parsed properly
-        # this is a workaround for keyboard library
-        keyboard.press((125, 126),)
-        keyboard.send('l')
-        keyboard.release((125, 126),)
-        sleep(10)
+                sc.insert()
+                sleep(10)
+                # press shortcut to lock the screen
+                # keyboard.send('windows+l') cannot be parsed properly
+                # this is a workaround for keyboard library
+                keyboard.press((125, 126),)
+                keyboard.send('l')
+                keyboard.release((125, 126),)
+                sleep(10)
 
-        # Wake up the black screen by pressing enter
-        gui.kb_send('enter', screenshot=False)
-        # Confirm that the screen is locked
-        # After the screen has been locked, there should be no Activities
-        gui.check_home_screen(False)
-        gui.click_on('Password', check_difference=False)
-        gui.kb_write(local_user.password)
-        gui.kb_send('enter', wait_time=10)
-        # confirm that you are logged back in
-        gui.check_home_screen()
+                # Wake up the black screen by pressing enter
+                gui.kb_send('enter', screenshot=False)
+                # Confirm that the screen is locked
+                # After the screen has been locked, there should be no Activities
+                gui.check_home_screen(False)
+                gui.click_on('Password', check_difference=False)
+                gui.kb_write(local_user.password)
+                # confirm that you are logged back in
+                gui.check_home_screen()
