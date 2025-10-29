@@ -1,7 +1,3 @@
-import pytest
-from time import sleep
-import pexpect
-
 def test_modutil_token_info(local_user, root_shell):
     """Check that p11-kit module shows smart card information with modutil
     command"""
@@ -44,3 +40,14 @@ def test_pam_services_config(local_user, root_shell, sssd):
             root_shell.sendline(local_user.pin)
             root_shell.expect_exact(f"pam_authenticate for user "
                                     f"[{local_user.username}]: Success")
+
+
+def test_physical_card_detection(local_user, root_shell):
+    for i in range(local_user.total_cards):
+        with getattr(local_user, f"card_{i}") as sc:
+            cmd = "pkcs11-tool -L"
+            root_shell.sendline(cmd)
+            root_shell.expect_exact("(empty)")
+            sc.insert()
+            root_shell.sendline(cmd)
+            root_shell.expect_exact(sc.label)

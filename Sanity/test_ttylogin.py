@@ -7,8 +7,10 @@ service that executes getty command to get TTY and executes login command in
 that TTY. Therefore, execution of login command in nearly the same way agetty
 does it is good approximation to manual testing in virtual console.
 """
+import re
 import sys
 from time import sleep
+from conftest import check_multicert
 
 import pexpect
 import pytest
@@ -348,17 +350,19 @@ def test_login_local_su_to_root(user, root_user, required, lock_on_removal):
         - User is switched to the root user
     """
     with Authselect(required=required, lock_on_removal=lock_on_removal):
-        with user.card(insert=True):
-            login_shell = login_shell_factory(user.username)
-            login_shell.expect([f"PIN for {user.username}:"])
-            login_shell.sendline(user.pin)
-            login_shell.expect([user.username])
-            login_shell.sendline("whoami")
-            login_shell.expect_exact(user.username)
-            login_shell.sendline('su - root -c "whoami"')
-            login_shell.expect_exact("Password:")
-            login_shell.sendline(root_user.password)
-            login_shell.expect_exact("root")
+        for i in range(user.total_cards):
+            with getattr(user, f"card_{i}")(insert=True) as sc:
+                login_shell = login_shell_factory(user.username)
+                check_multicert(shell=login_shell)
+                login_shell.expect([f"PIN for.*{re.escape(sc.label)}.*:"])
+                login_shell.sendline(sc.pin)
+                login_shell.expect([user.username])
+                login_shell.sendline("whoami")
+                login_shell.expect_exact(user.username)
+                login_shell.sendline('su - root -c "whoami"')
+                login_shell.expect_exact("Password:")
+                login_shell.sendline(root_user.password)
+                login_shell.expect_exact("root")
 
 @pytest.mark.parametrize("required", [True, False])
 def test_login_kerberos_su_to_root(ipa_user, root_user, required):
