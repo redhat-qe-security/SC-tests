@@ -1,11 +1,10 @@
 import logging
 
-
-from SCAutolib.utils import load_user, ipa_factory, load_token, \
-    ca_factory
+from SCAutolib.models.CA import BaseCA, IPAServerCA
+from SCAutolib.models.card import Card
+from SCAutolib.models.user import User
 
 from fixtures import *
-from pathlib import Path
 
 log = logging.getLogger("PyTest")
 log.setLevel(logging.DEBUG)
@@ -20,17 +19,18 @@ def load_tokens(user, token_list, update_sssd):
     for index, token in enumerate(token_list):
         log.debug("Loading %s. token", index)
         setattr(
-            user, f"card_{index}", load_token(token, update_sssd = update_sssd)
+            user, f"card_{index}",
+            Card.load(card_name = token, update_sssd = update_sssd)
         )
         log.debug(f"Token %s is loaded", index)
 
 
 def update_ca(user, token_list):
     log.info("Loading local CA")
-    for index, token in enumerate(token_list):
+    for index, _ in enumerate(token_list):
         card_name = f"card_{index}"
         card = getattr(user, card_name, None)
-        ca = ca_factory(ca_name=card.ca_name)
+        ca = BaseCA.factory(ca_name = card.ca_name)
         ca.update_ca_db()
     log.debug("CA database is updated")
 
@@ -50,11 +50,11 @@ def pytest_configure(config):
 
     if user_type in ["ipa", "all"]:
         log.debug("Loading IPA client")
-        ipa_server = ipa_factory()
+        ipa_server = IPAServerCA.factory()
         log.debug("IPA client is loaded")
         log.debug("Loading IPA user")
-        ipa_user = load_user(
-            config.getoption("ipa_username"),
+        ipa_user = User.load(
+            username = config.getoption("ipa_username"),
             ipa_server=ipa_server)
         assert ipa_user.user_type == "ipa"
         log.debug("IPA user is loaded")
@@ -63,8 +63,7 @@ def pytest_configure(config):
         ipa_user.pin = ipa_user.card.pin
     if user_type in ["local", "all"]:
         log.debug("Loading local user")
-        local_user = load_user(config.getoption(
-            "local_username"))
+        local_user = User.load(username = config.getoption("local_username"))
         assert local_user.user_type == "local"
         log.debug("Local user is loaded")
         load_tokens(local_user, tokens, config.getoption("keep_sssd"))

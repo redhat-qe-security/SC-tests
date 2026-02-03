@@ -14,7 +14,7 @@ import pexpect
 import pytest
 
 from SCAutolib.models.authselect import Authselect
-from SCAutolib.isDistro import isDistro
+from SCAutolib.utils import isDistro
 
 
 def login_shell_factory(username):
