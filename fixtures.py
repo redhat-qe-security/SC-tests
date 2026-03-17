@@ -31,14 +31,19 @@ def allow_sudo_commands(ipa_user):
     """
     logger = logging.getLogger()
 
+    logger.debug("Checking if the allow_sudo rule is there.")
+    out = run('ipa sudorule-show allow_sudo'.split(), return_code = [0, 2])
+    if out.returncode == 0:
+        run('ipa sudorule-del allow_sudo'.split())
+        run("systemctl restart sssd".split(), sleep = 10)
     run('ipa sudorule-add allow_sudo --hostcat=all --runasusercat=all --runasgroupcat=all --cmdcat=all'.split())
     run(f'ipa sudorule-add-user allow_sudo --user {ipa_user.username}'.split())
-    run("systemctl restart sssd".split(), sleep = 5)
+    run("systemctl restart sssd".split(), sleep = 10)
     logger.debug("Checking that the sudo rule has been added (following command should succeed)")
     run('ipa sudorule-show allow_sudo'.split())
     yield # running the test's code
     run('ipa sudorule-del allow_sudo'.split())
-    run("systemctl restart sssd".split(), sleep = 5)
+    run("systemctl restart sssd".split(), sleep = 10)
     logger.debug("Checking that the sudo rule has been removed (following command should exit with status 2)")
     run('ipa sudorule-show allow_sudo'.split(), return_code = [2])
 
