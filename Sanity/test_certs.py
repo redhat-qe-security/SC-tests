@@ -29,21 +29,21 @@ def test_wrong_issuer_cert(local_user, sssd_db, user_shell, tmp_path):
         - User can login with a password
     """
 
-    sssd_db.backup()
-    sssd_db.path.unlink()
-
-    run(['mkdir', tmp_path.joinpath("ca")])
-    BaseCA.factory(path=tmp_path.joinpath("ca"), create=True)
-    run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
-
     with Authselect():
         with local_user.card(insert=True):
+            sssd_db.backup()
+            sssd_db.path.unlink()
+
+            run(['mkdir', tmp_path.joinpath("ca")])
+            BaseCA.factory(path=tmp_path.joinpath("ca"), create=True)
+            run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
+
             cmd = f'su {local_user.username} -c "whoami"'
             user_shell.sendline(cmd)
             user_shell.expect_exact(f"Password:")
             user_shell.sendline(local_user.password)
             user_shell.expect_exact(local_user.username)
 
-    sssd_db.restore()
-    run(['rm', "-rf", tmp_path.joinpath("ca")])
-    run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
+            sssd_db.restore()
+            run(['rm', "-rf", tmp_path.joinpath("ca")])
+            run(['restorecon', "-v", "/etc/sssd/pki/sssd_auth_ca_db.pem"])
