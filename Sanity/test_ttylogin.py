@@ -253,10 +253,10 @@ def test_login_sc_required(user, lock_on_removal):
         - User is successfully logged in
     """
     with Authselect(required=True, lock_on_removal=lock_on_removal):
-        login_shell = login_shell_factory(user.username)
-        login_shell.expect("Please insert smart card")
-
-        with user.card(insert=True):
+        with user.card as sc:
+            login_shell = login_shell_factory(user.username)
+            login_shell.expect("Please insert smart card")
+            sc.insert()
             login_shell.expect(f"PIN for {user.username}:")
             login_shell.sendline(user.pin)
             login_shell.expect(user.username)
